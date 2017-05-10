@@ -169,12 +169,16 @@ class DQN(csb.Model):
 
     @csb.graph_property
     def q(self, scope):
+        defaults = {
+            'activation': tf.nn.relu,
+            'kernel_initializer': tf.contrib.layers.variance_scaling_initializer(),
+        }
         y = self.input
-        y = tf.layers.conv2d(y, filters=32, kernel_size=8, strides=4, activation=tf.nn.relu)
-        y = tf.layers.conv2d(y, filters=64, kernel_size=4, strides=2, activation=tf.nn.relu)
-        y = tf.layers.conv2d(y, filters=64, kernel_size=3, strides=1, activation=tf.nn.relu)
+        y = tf.layers.conv2d(y, filters=32, kernel_size=8, strides=4, **defaults)
+        y = tf.layers.conv2d(y, filters=64, kernel_size=4, strides=2, **defaults)
+        y = tf.layers.conv2d(y, filters=64, kernel_size=3, strides=1, **defaults)
         y = tf.contrib.layers.flatten(y)
-        y = tf.layers.dense(y, units=512, activation=tf.nn.relu)
+        y = tf.layers.dense(y, units=512, **defaults)
         y = tf.layers.dense(y, units=self.n_actions, activation=None)
         return y
 
