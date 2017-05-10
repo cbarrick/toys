@@ -164,11 +164,11 @@ class DQN(csb.Model):
         self.load(ckpt)
 
     @csb.graph_property
-    def input(self):
+    def input(self, scope):
         return tf.placeholder(tf.float32, (None, *self.obs_shape))
 
     @csb.graph_property
-    def q(self):
+    def q(self, scope):
         y = self.input
         y = tf.layers.conv2d(y, filters=32, kernel_size=8, strides=4, activation=tf.nn.relu)
         y = tf.layers.conv2d(y, filters=64, kernel_size=4, strides=2, activation=tf.nn.relu)
@@ -179,15 +179,15 @@ class DQN(csb.Model):
         return y
 
     @csb.graph_property
-    def q_label(self):
+    def q_label(self, scope):
         return tf.placeholder(tf.float32, (None, ))
 
     @csb.graph_property
-    def action_label(self):
+    def action_label(self, scope):
         return tf.placeholder(tf.int32, (None, ))
 
     @csb.graph_property
-    def loss(self):
+    def loss(self, scope):
         action_label = tf.one_hot(self.action_label, self.n_actions)
         q_label = tf.expand_dims(self.q_label, 1) * action_label
         q = self.q * action_label
@@ -195,15 +195,15 @@ class DQN(csb.Model):
         return tf.clip_by_value(error, -1, 1)
 
     @csb.graph_property
-    def global_step(self):
+    def global_step(self, scope):
         return tf.train.create_global_step()
 
     @csb.graph_property
-    def increment_global_step(self):
+    def increment_global_step(self, scope):
         return tf.assign_add(self.global_step, 1)
 
     @csb.graph_property
-    def exploration(self):
+    def exploration(self, scope):
         initial = float(self.exploration_initial)
         global_step = self.global_step
         steps = self.exploration_steps
@@ -212,9 +212,9 @@ class DQN(csb.Model):
         return tf.train.polynomial_decay(initial, global_step, steps, final, power)
 
     @csb.graph_property
-    def train(self):
+    def train(self, scope):
         return self.optimizer.minimize(self.loss)
 
     @csb.graph_property
-    def saver(self):
+    def saver(self, scope):
         return tf.train.Saver()
