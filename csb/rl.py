@@ -40,7 +40,7 @@ def rl_loop(env, agent, n=1000000, learn=True, render=0):
             action = agent.act(obs)
             obs_next, reward, done, info = env.step(action)
             if learn:
-                agent.learn(obs, action, obs_next, reward, done, info)
+                agent.observe(obs, action, obs_next, reward, done, info)
 
             obs = obs_next
             total_reward += reward

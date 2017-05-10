@@ -112,7 +112,7 @@ class DQN(csb.Model):
 
         return action
 
-    def learn(self, obs, action, obs_next, reward, done, info):
+    def observe(self, obs, action, obs_next, reward, done, info):
         global_step = self.sess.run(self.increment_global_step)
 
         # Clip the reward.
