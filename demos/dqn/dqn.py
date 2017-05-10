@@ -2,7 +2,7 @@ import numpy as np
 import scipy as sp
 import tensorflow as tf
 
-from csb.core import Model, graph_property
+import csb
 
 
 class ReplayMemory:
@@ -40,7 +40,7 @@ class ReplayMemory:
         return np.random.choice(self.data[:self.len], n)
 
 
-class DQN(Model):
+class DQN(csb.Model):
     def __init__(self,
                  env,
                  memory_size=2**16,
@@ -74,16 +74,12 @@ class DQN(Model):
         self.optimizer = optimizer
 
         # Runtime state
+        self.name = name
         self.prev_action = 0
         self.prev_action_count = 0
         self.memory = ReplayMemory(self.memory_size, self.obs_shape)
-        self.graph = tf.Graph()
-        self.build(self.graph)
-        self.graph.finalize()
-        self.sess = tf.Session(graph=self.graph)
-        self.target = tf.Session(graph=self.graph)
-        self.sess.run(self.initialize)
-        self.target.run(self.initialize)
+        self.sess = self.new_session()
+        self.target = self.new_session()
 
     def act(self, obs):
         exploration = self.sess.run(self.exploration)
@@ -167,15 +163,11 @@ class DQN(Model):
         ckpt = tf.train.latest_checkpoint(ckpt_dir)
         self.load(ckpt)
 
-    @graph_property
-    def initialize(self):
-        return tf.global_variables_initializer()
-
-    @graph_property
+    @csb.graph_property
     def input(self):
         return tf.placeholder(tf.float32, (None, *self.obs_shape))
 
-    @graph_property
+    @csb.graph_property
     def q(self):
         y = self.input
         y = tf.layers.conv2d(y, filters=32, kernel_size=8, strides=4, activation=tf.nn.relu)
@@ -186,15 +178,15 @@ class DQN(Model):
         y = tf.layers.dense(y, units=self.n_actions, activation=None)
         return y
 
-    @graph_property
+    @csb.graph_property
     def q_label(self):
         return tf.placeholder(tf.float32, (None, ))
 
-    @graph_property
+    @csb.graph_property
     def action_label(self):
         return tf.placeholder(tf.int32, (None, ))
 
-    @graph_property
+    @csb.graph_property
     def loss(self):
         action_label = tf.one_hot(self.action_label, self.n_actions)
         q_label = tf.expand_dims(self.q_label, 1) * action_label
@@ -202,15 +194,15 @@ class DQN(Model):
         error = tf.losses.mean_squared_error(q_label, q)
         return tf.clip_by_value(error, -1, 1)
 
-    @graph_property
+    @csb.graph_property
     def global_step(self):
         return tf.train.create_global_step()
 
-    @graph_property
+    @csb.graph_property
     def increment_global_step(self):
         return tf.assign_add(self.global_step, 1)
 
-    @graph_property
+    @csb.graph_property
     def exploration(self):
         initial = float(self.exploration_initial)
         global_step = self.global_step
@@ -219,10 +211,10 @@ class DQN(Model):
         power = 1.0
         return tf.train.polynomial_decay(initial, global_step, steps, final, power)
 
-    @graph_property
+    @csb.graph_property
     def train(self):
         return self.optimizer.minimize(self.loss)
 
-    @graph_property
+    @csb.graph_property
     def saver(self):
         return tf.train.Saver()
