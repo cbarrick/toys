@@ -154,8 +154,6 @@ class DQN(csb.Model):
         return self.saver.save(self.sess, ckpt, global_step=self.global_step)
 
     def load(self, ckpt):
-        if self.target is None:
-            self.target = tf.Session(graph=self.graph)
         self.saver.restore(self.sess, ckpt)
         self.saver.restore(self.target, ckpt)
 
