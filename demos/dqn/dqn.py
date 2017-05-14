@@ -41,29 +41,27 @@ class ReplayMemory:
 
 
 class DQN(csb.Model):
-    def __init__(self,
-                 env,
-                 memory_size=2**16,
-                 minibatch_size=32,
-                 max_repeat=32,
-                 learn_freq=4,
-                 target_update_freq=10000,
-                 replay_start=50000,
-                 discount_factor=0.99,
-                 exploration_initial=1,
-                 exploration_final=0.1,
-                 exploration_steps=1000000,
-                 optimizer=tf.train.AdamOptimizer(0.00025),
-                 name='dqn'):
+    def __init__(
+            self,
+            env,
+            memory_size=2**16,
+            minibatch_size=32,
+            learn_freq=4,
+            target_update_freq=10000,
+            replay_start=50000,
+            discount_factor=0.99,
+            exploration_initial=1,
+            exploration_final=0.1,
+            exploration_steps=1000000,
+            optimizer=tf.train.AdamOptimizer(0.00025),
+            name='dqn', ):
 
         # Hyper-parameters
         self.env = env
         self.obs_shape = env.observation_space.shape
         self.n_actions = env.action_space.n
-        self.name = name
         self.memory_size = memory_size
         self.minibatch_size = minibatch_size
-        self.max_repeat = max_repeat
         self.learn_freq = learn_freq
         self.target_update_freq = target_update_freq
         self.replay_start = replay_start
@@ -75,8 +73,6 @@ class DQN(csb.Model):
 
         # Runtime state
         self.name = name
-        self.prev_action = 0
-        self.prev_action_count = 0
         self.memory = ReplayMemory(self.memory_size, self.obs_shape)
         self.online = self.new_session()
         self.offline = self.new_session()
@@ -98,17 +94,6 @@ class DQN(csb.Model):
             obs = np.expand_dims(obs, 0)
             q = self.online.run(self.q, {self.input: obs})
             action = np.argmax(q)
-
-        # Don't repeat actions too often
-        if action == self.prev_action:
-            self.prev_action_count += 1
-            if self.prev_action_count > self.max_repeat:
-                while action == self.prev_action:
-                    action = np.random.randint(self.n_actions)
-                self.prev_action_count = 0
-        else:
-            self.prev_action_count = 0
-        self.prev_action = action
 
         return action
 
