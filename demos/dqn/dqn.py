@@ -78,11 +78,11 @@ class DQN(csb.Model):
         self.prev_action = 0
         self.prev_action_count = 0
         self.memory = ReplayMemory(self.memory_size, self.obs_shape)
-        self.sess = self.new_session()
-        self.target = self.new_session()
+        self.online = self.new_session()
+        self.offline = self.new_session()
 
     def act(self, obs):
-        exploration = self.sess.run(self.exploration)
+        exploration = self.online.run(self.exploration)
 
         if len(self.memory) < self.memory_size:
             # Play randomly until memory buffer is full.
@@ -96,7 +96,7 @@ class DQN(csb.Model):
         else:
             # Otherwise choose the best predicted action.
             obs = np.expand_dims(obs, 0)
-            q = self.sess.run(self.q, {self.input: obs})
+            q = self.online.run(self.q, {self.input: obs})
             action = np.argmax(q)
 
         # Don't repeat actions too often
@@ -113,7 +113,7 @@ class DQN(csb.Model):
         return action
 
     def observe(self, obs, action, obs_next, reward, done, info):
-        global_step = self.sess.run(self.increment_global_step)
+        global_step = self.online.run(self.increment_global_step)
 
         # Clip the reward.
         if reward > 1: reward = 1.0
@@ -130,16 +130,21 @@ class DQN(csb.Model):
         if self.replay_start < global_step and global_step % self.learn_freq == 0:
             # Get the experiences and predictions to train on.
             replay = self.memory.sample(self.minibatch_size)
-            prediction = self.sess.run(self.q, {self.input: replay['old_obs']})
+            prediction = self.online.run(self.q, {self.input: replay['old_obs']})
 
-            # Compute the targets.
-            future_q = self.target.run(self.q, {self.input: replay['new_obs']})
-            future_q = np.amax(future_q, axis=1)
-            future_q = future_q * np.invert(replay['done'])
-            q_label = replay['reward'] + self.discount_factor * future_q
+            # Compute the targets using the Double DQN technique.
+            # 1. Decide on future actions using the online network.
+            # 2. Compute their value using the target network.
+            # 3. Construct the label as: reward + discount * future_value.
+            online_q = self.online.run(self.q, {self.input: replay['new_obs']})
+            offline_q = self.offline.run(self.q, {self.input: replay['new_obs']})
+            actions = np.argmax(online_q, axis=1)
+            future_value = np.choose(actions, offline_q.T)
+            future_value = future_value * np.invert(replay['done'])
+            q_label = replay['reward'] + self.discount_factor * future_value
 
             # Train!
-            self.sess.run(self.train, {
+            self.online.run(self.train, {
                 self.input: replay['old_obs'],
                 self.q_label: q_label,
                 self.action_label: replay['action'],
@@ -151,11 +156,11 @@ class DQN(csb.Model):
 
     def save(self, ckpt=None):
         ckpt = ckpt or self.name + '.ckpt'
-        return self.saver.save(self.sess, ckpt, global_step=self.global_step)
+        return self.saver.save(self.online, ckpt, global_step=self.global_step)
 
     def load(self, ckpt):
-        self.saver.restore(self.sess, ckpt)
-        self.saver.restore(self.target, ckpt)
+        self.saver.restore(self.online, ckpt)
+        self.saver.restore(self.offline, ckpt)
 
     def load_latest(self, ckpt_dir='.'):
         ckpt = tf.train.latest_checkpoint(ckpt_dir)
