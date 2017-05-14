@@ -158,7 +158,7 @@ class DQN(csb.Model):
     @csb.graph_property
     def q(self, scope):
         defaults = {
-            'activation': tf.nn.relu,
+            'activation': tf.nn.elu,
             'kernel_initializer': tf.contrib.layers.variance_scaling_initializer(),
         }
         y = self.input
