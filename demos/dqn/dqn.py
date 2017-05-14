@@ -53,7 +53,7 @@ class DQN(csb.Model):
                  exploration_initial=1,
                  exploration_final=0.1,
                  exploration_steps=1000000,
-                 optimizer=tf.train.AdamOptimizer(0.001),
+                 optimizer=tf.train.AdamOptimizer(0.00025),
                  name='dqn'):
 
         # Hyper-parameters
