@@ -43,7 +43,8 @@ class ReplayMemory:
 class DQN(csb.Model):
     def __init__(
             self,
-            env,
+            obs_shape,
+            n_actions,
             memory_size=2**16,
             minibatch_size=32,
             learn_freq=4,
@@ -57,9 +58,8 @@ class DQN(csb.Model):
             name='dqn', ):
 
         # Hyper-parameters
-        self.env = env
-        self.obs_shape = env.observation_space.shape
-        self.n_actions = env.action_space.n
+        self.obs_shape = obs_shape
+        self.n_actions = n_actions
         self.memory_size = memory_size
         self.minibatch_size = minibatch_size
         self.learn_freq = learn_freq
