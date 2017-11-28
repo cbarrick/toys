@@ -7,7 +7,7 @@ import torch.utils.data as D
 
 
 class Estimator:
-    '''
+    '''Wraps a torch network, optimizer, and loss to an sklearn-like estimator.
     '''
 
     def __init__(self, net, opt, loss, cuda=None, dry_run=False):
@@ -17,18 +17,20 @@ class Estimator:
             net: The network to train.
             opt: The optimizer to step during training.
             loss: The loss function to minimize.
-            cuda: The cuda device to use.
+            cuda: The cuda device. `None` means automatic. `False` means disabled.
             dry_run: Cut loops short, for testing.
         '''
-        if cuda is not None:
+        if cuda is None and torch.cuda.is_available():
+            cuda = 0
             net = net.cuda(cuda)
+        elif cuda is None:
+            cuda = False
 
         self.net = net
         self.opt = opt
         self.loss = loss
         self.cuda = cuda
         self.dry_run = dry_run
-        self.reset()
 
     def reset(self):
         '''Reset the estimator to it's initial state.
@@ -37,17 +39,19 @@ class Estimator:
         return self
 
     def variable(self, x, **kwargs):
-        '''Cast a tensor to a `Variable` on the same cuda device as the network.
-
-        If the input is already a `Variable`, it is not wrapped.
+        '''Cast a tensor to a variable.
 
         Args:
             x: The tensor to wrap.
             **kwargs: Passed to the `Variable` constructor.
+
+        Returns:
+            Returns a torch `Variable` on the same cuda device as the network.
+            If x is already a `Variable`, it is not wrapped, but it is moved to the GPU.
         '''
         if not isinstance(x, A.Variable):
             x = A.Variable(x, **kwargs)
-        if self.cuda is not None:
+        if self.cuda is not False:
             x = x.cuda(self.cuda, async=True)
         return x
 
@@ -55,7 +59,7 @@ class Estimator:
         '''Get the list of trainable paramaters.
 
         Returns:
-            A list of all parameters in the optimizer's `param_groups`.
+            Returns a list of all parameters known to the optimizer.
         '''
         return [p for group in self.opt.param_groups for p in group['params']]
 
@@ -135,7 +139,7 @@ class Estimator:
             x: The input batch.
 
         Returns:
-            The output of the network.
+            Returns the output of the network.
         '''
         self.net.eval()
         x = self.variable(x, volatile=True)
@@ -151,35 +155,41 @@ class Estimator:
             criteria: The metric to measure; defaults to the mean loss.
 
         Returns:
-            Returns the result of `criteria(true, predicted)`
+            Returns the result of `criteria(true, predicted)`.
         '''
         self.net.eval()
+        x = self.variable(x, volatile=True)
+        y = self.variable(y, volatile=True)
 
         if criteria is None:
-            x = self.variable(x, volatile=True)
-            y = self.variable(y, volatile=True)
             h = self.net(x)
-            j = self.loss(h, y)
-            j = j.data.mean()
-        else:
-            h = self.predict(x)
+            j = self.loss(h, y).mean()
+            return j.data
+
+        h = self.predict(x)
+        try:
+            return criteria(y, h)
+        except:
             h = h.cpu().numpy()
             y = y.cpu().numpy()
-            j = criteria(y, h)
-
-        return j
+            return criteria(y, h)
 
     def test(self, data, criteria=None, **kwargs):
         '''Score the model on a dataset.
 
         Args:
-            data: A `torch.DataLoader` to score against.
+            data: A dataset to score against.
             criteria: The metric to measure; defaults to the loss.
             **kwargs: Forwarded to torch's `DataLoader` class, with more sensible defaults.
+
+        Returns:
+            Returns the result of `criteria(true, predicted)` averaged over all batches.
+            The last incomplete batch is dropped by default.
         '''
+        kwargs.setdefault('drop_last', True)
         kwargs.setdefault('pin_memory', self.cuda is not None)
         data = D.DataLoader(data, **kwargs)
-        n = len(data.dataset)
+        n = len(data)
         loss = 0
         for x, y in data:
             j = self.score(x, y, criteria)
