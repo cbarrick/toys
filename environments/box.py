@@ -5,7 +5,7 @@ import scipy as sp
 import scipy.ndimage
 
 
-class BoxNormalize(gym.ObservationWrapper):
+class Normalize(gym.ObservationWrapper):
     '''A preprocessor to normalize box observations.
     '''
 
@@ -74,8 +74,8 @@ class Zoom(gym.ObservationWrapper):
         return sp.ndimage.zoom(obs, self.zoom, **self.kwargs)
 
 
-class BoxActionRepeat(gym.Wrapper):
-    '''A wrapper that repeates the action for some frames.
+class BoxRepeatAction(gym.Wrapper):
+    '''A wrapper that repeates the action for some number of frames.
 
     The resulting observation is the stack of frames.
     '''
@@ -105,3 +105,22 @@ class BoxActionRepeat(gym.Wrapper):
         blank = np.zeros(self.observation_space.shape)
         frame = np.expand_dims(self.env.reset(), axis=-1)
         return blank + frame
+
+
+class Atari(gym.Wrapper):
+    '''A wrapper for Atari environments to apply preprocessing:
+    - Down sampling: Frames are converted to grayscale and resized.
+    - Action repeat: Actions are repeated for some number of frames.
+    - Frame stacking: Observations are the stack of frames skipped over.
+    - Deflicker: Frames are maxed with the previous frame. This is useful in
+      games where sprites are flickered between frames (off by default).
+    '''
+
+    def __init__(self, env, zoom=0.5, repeat=4, deflicker=False):
+        env = gym.make(env) if isinstance(env, str) else env
+        env = Normalize(env)
+        env = Grayscale(env)
+        env = Deflicker(env) if deflicker else env
+        env = Zoom(env, zoom)
+        env = BoxRepeatAction(env, repeat)
+        super().__init__(env)
