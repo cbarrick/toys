@@ -158,18 +158,18 @@ class Estimator:
             Returns the result of `criteria(true, predicted)`.
         '''
         self.net.eval()
-        x = self.variable(x, volatile=True)
-        y = self.variable(y, volatile=True)
 
         if criteria is None:
+            x = self.variable(x, volatile=True)
+            y = self.variable(y, volatile=True)
             h = self.net(x)
-            j = self.loss(h, y).mean()
-            return j.data
+            j = self.loss(h, y)
+            return j.data.mean()
 
         h = self.predict(x)
         try:
             return criteria(y, h)
-        except:
+        except (ValueError, TypeError):
             h = h.cpu().numpy()
             y = y.cpu().numpy()
             return criteria(y, h)
