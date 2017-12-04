@@ -24,7 +24,6 @@ logger = logging.getLogger()
 
 def main(**kwargs):
     kwargs.setdefault('data_size', 10000)
-    kwargs.setdefault('folds', 5)
     kwargs.setdefault('epochs', 100)
     kwargs.setdefault('learning_rate', 0.001)
     kwargs.setdefault('patience', None)
@@ -82,7 +81,6 @@ if __name__ == '__main__':
 
     group = parser.add_argument_group('Hyper-parameters')
     group.add_argument('-n', '--data-size', metavar='N', type=int, help='The number of training samples is a function of N.')
-    group.add_argument('-k', '--folds', metavar='N', type=int, help='The number of cross-validation folds.')
     group.add_argument('-e', '--epochs', metavar='N', type=int, help='The maximum number of epochs per task.')
     group.add_argument('-l', '--learning-rate', metavar='N', type=float, help='The learning rate.')
     group.add_argument('-p', '--patience', metavar='N', type=int, help='Higher patience may help avoid local minima.')
