@@ -12,9 +12,8 @@ import torch.nn as N
 import torch.nn.functional as F
 import torch.optim as O
 
-from torchvision.datasets import MNIST
-
-from networks import AlexNetSmall
+from datasets import MNIST
+from networks import AlexNet
 from estimators import Classifier
 from metrics import precision, recall, f_score
 
@@ -42,7 +41,7 @@ def main(**kwargs):
     )
 
     nets = {
-        'alex': AlexNetSmall(10),
+        'alex': AlexNet(10, (1,28,28)),
     }
 
     metrics = {
@@ -56,13 +55,13 @@ def main(**kwargs):
     loss = N.CrossEntropyLoss()
     model = Classifier(net, opt, loss, name=args.name, cuda=args.cuda, dry_run=args.dry_run)
 
+    train, test = MNIST().load()
+
     print(f'-------- Training --------')
-    train = MNIST('./data/mnist', train=True, download=True)
     model.fit(train, epochs=args.epochs, patience=args.patience, batch_size=args.batch_size)
     print()
 
     print(f'-------- Scoring --------')
-    test = MNIST('./data/mnist', train=False, download=True)
     for metric, criteria in metrics.items():
         print(metric, end=': ', flush=True)
         z = model.test(test, criteria, batch_size=args.batch_size)

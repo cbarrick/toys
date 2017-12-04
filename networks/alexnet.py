@@ -1,3 +1,5 @@
+import numpy as np
+
 import torch
 import torch.nn as N
 
@@ -40,17 +42,17 @@ class LRN(N.Module):
         return x
 
 
-class AlexNetSmall(N.Module):
+class AlexNet(N.Module):
     '''An AlexNet-like model based on the CIFAR-10 variant of AlexNet in Caffe.
 
     See https://github.com/BVLC/caffe/blob/1.0/examples/cifar10/cifar10_full.prototxt
     '''
 
-    def __init__(self, num_classes=10):
+    def __init__(self, num_classes=10, shape=(3, 64, 64)):
         super().__init__()
 
         self.features = N.Sequential(
-            N.Conv2d(3, 32, kernel_size=5, stride=1, padding=2),
+            N.Conv2d(shape[0], 32, kernel_size=5, stride=1, padding=2),
             N.MaxPool2d(kernel_size=3, stride=2, padding=1),
             N.ReLU(inplace=True),
             LRN(3, alpha=5e-5, beta=0.75, cross_channel=False),
@@ -65,8 +67,10 @@ class AlexNetSmall(N.Module):
             N.AvgPool2d(kernel_size=3, stride=2, padding=1),
         )
 
+        n = int(np.ceil(shape[1] / 2 / 2 / 2))
+        m = int(np.ceil(shape[2] / 2 / 2 / 2))
         self.classifier = N.Sequential(
-            N.Linear(64*8*8, 64),
+            N.Linear(64*n*m, 64),
             N.ReLU(inplace=True),
             N.Dropout(),
             N.Linear(64, num_classes),
