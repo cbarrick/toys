@@ -26,11 +26,10 @@ class Estimator:
             cuda: The cuda device to use.
             dry_run: Cut loops short.
         '''
-        if cuda is None and torch.cuda.is_available():
-            cuda = 0
+        if cuda is None:
+            cuda = 0 if torch.cuda.is_available() else False
+        if cuda is not False:
             net = net.cuda(cuda)
-        elif cuda is None:
-            cuda = False
 
         self.net = net
         self.opt = opt
