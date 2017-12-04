@@ -14,7 +14,7 @@ import torch.optim as O
 
 from torchvision.datasets import MNIST
 
-from models import AlexNet
+from networks import AlexNetSmall
 from estimators import Classifier
 from metrics import precision, recall, f_score
 
@@ -42,7 +42,7 @@ def main(**kwargs):
     )
 
     nets = {
-        'alex': AlexNet(10),
+        'alex': AlexNetSmall(10),
     }
 
     metrics = {
