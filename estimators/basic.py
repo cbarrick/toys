@@ -35,6 +35,7 @@ class Estimator:
         self.net = net
         self.opt = opt
         self.loss = loss
+        self.name = name
         self.cuda = cuda
         self.dry_run = dry_run
         self.reset()
