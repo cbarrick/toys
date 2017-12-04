@@ -39,7 +39,7 @@ class Estimator:
         self.dry_run = dry_run
         self.reset()
 
-        self.path = Path(f'./_parameters/{self.name}.torch')
+        self.path = Path(f'./checkpoints/{self.name}.torch')
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.path.touch()
 

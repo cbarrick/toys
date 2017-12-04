@@ -1,3 +1,16 @@
+# Project specific ignores
+# --------------------------------------------------
+
+# model checkpoints
+/checkpoints
+
+# data downloaded by datasets
+/data
+
+
+# Generic Python ignores
+# --------------------------------------------------
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
