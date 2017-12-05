@@ -67,10 +67,10 @@ def background_mask(image):
     return mask_b
 
 
-def edge_mask(mask_p):
+def edge_mask(mask_p, size=5):
     '''Creates a mask around the outer edges of the positive class.
     '''
-    k = np.ones((5,5))
+    k = np.ones((size, size))
     mask_p = mask_p.astype('uint8')
     edges = cv2.dilate(mask_p, k)
     edges = edges - mask_p
@@ -154,7 +154,7 @@ def get_metadata(image_path):
     }
 
 
-def create_cv(path, k, n, **kwargs):
+def create_cv(path='./data/nuclei', k=5, n=10000, **kwargs):
     '''Extract a training set of patches taken from all images in a directory.
 
     The dataset is folded for cross-validation by patient id.
@@ -190,7 +190,17 @@ def create_cv(path, k, n, **kwargs):
     return folds
 
 
-class NucleiDataset(torch.utils.data.Dataset):
+def lazy_property(prop):
+    val = None
+    def wrapper(self):
+        nonlocal val
+        if val is None:
+            val = prop(self)
+        return val
+    return property(wrapper)
+
+
+class Dataset(torch.utils.data.Dataset):
     '''A torch `Dataset` that combines positive and negative samples.
     '''
     def __init__(self, pos, neg):
@@ -241,9 +251,17 @@ class NucleiSegmentation:
                 The dataset will contain `n * bg_ratio`
                 negative background patches per source image.
         '''
+        kwargs['path'] = path
+        kwargs['k'] = k
+        kwargs['n'] = n
+        self._args = kwargs
+
+    @lazy_property
+    def datasets(self):
         logger.info('loading nuclei dataset...')
-        folds = create_cv(path, k, n, **kwargs)
-        self.datasets = np.array([NucleiDataset(f['pos'], f['neg']) for f in folds])
+        folds = create_cv(**self._args)
+        datasets = np.array([Dataset(f['pos'], f['neg']) for f in folds])
+        return datasets
 
     def load(self, fold):
         k = len(self.datasets)
