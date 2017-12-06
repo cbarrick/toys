@@ -17,7 +17,8 @@ logger = logging.getLogger(__name__)
 
 
 def get_data(path='./data/nuclei', force_download=False):
-    '''Download the data and return a Path to the directory.'''
+    '''Download the data and return a Path to the directory.
+    '''
     src = 'http://andrewjanowczyk.com/wp-static/nuclei.tgz'
     arc = Path('./nuclei.tgz')
     dst = Path(path)
@@ -34,6 +35,19 @@ def get_data(path='./data/nuclei', force_download=False):
     tarfile.open(arc).extractall(dst)
     arc.unlink()
     return dst
+
+
+def get_metadata(image_path):
+    ''''Get the metadata for an image given its path.
+    '''
+    image_path = str(image_path)
+    match = re.search('([0-9]+)_([0-9]+)_([0-9a-f]+)_', image_path)
+    return {
+        'id': match[3],
+        'type': match[2],
+        'patient': match[1],
+        'path': image_path,
+    }
 
 
 def imread(path, mask=False):
@@ -141,19 +155,6 @@ def extract_patches(image, mask_p, n, pos_ratio=1, edge_ratio=1, bg_ratio=0.3):
     return pos, neg
 
 
-def get_metadata(image_path):
-    '''Extracts the metadata from a file name.
-    '''
-    image_path = str(image_path)
-    match = re.search('([0-9]+)_([0-9]+)_([0-9a-f]+)_', image_path)
-    return {
-        'id': match[3],
-        'type': match[2],
-        'patient': match[1],
-        'path': image_path,
-    }
-
-
 def create_cv(path='./data/nuclei', k=5, n=10000, **kwargs):
     '''Extract a training set of patches taken from all images in a directory.
 
@@ -191,6 +192,8 @@ def create_cv(path='./data/nuclei', k=5, n=10000, **kwargs):
 
 
 def lazy_property(prop):
+    '''A lazy, memoized version of the builtin `property` decorator.
+    '''
     val = None
     def wrapper(self):
         nonlocal val
@@ -203,6 +206,7 @@ def lazy_property(prop):
 class Dataset(torch.utils.data.Dataset):
     '''A torch `Dataset` that combines positive and negative samples.
     '''
+
     def __init__(self, pos, neg):
         self._pos = pos
         self._neg = neg
@@ -224,12 +228,13 @@ class Dataset(torch.utils.data.Dataset):
 
 
 class NucleiSegmentation:
-    '''A dataloader for the nuclei segmentation dataset.
+    '''A cross-validation loader for the nuclei segmentation dataset.
     '''
-    def __init__(self, path='./data/nuclei', k=5, n=10000, **kwargs):
+
+    def __init__(self, **kwargs):
         '''Create a dataloader.
 
-        Args:
+        Kwargs:
             path (str):
                 The path to the dataset.
             k (int):
@@ -237,8 +242,6 @@ class NucleiSegmentation:
             n (int):
                 A parameter to determine the number of
                 patches drawn from each source image.
-
-        Kwargs:
             size (int, default=64):
                 The size of the image patches.
             pos_ratio (default=1):
@@ -251,19 +254,23 @@ class NucleiSegmentation:
                 The dataset will contain `n * bg_ratio`
                 negative background patches per source image.
         '''
-        kwargs['path'] = path
-        kwargs['k'] = k
-        kwargs['n'] = n
         self._args = kwargs
 
     @lazy_property
     def datasets(self):
+        '''The list of datasets, one for each fold.
+        '''
         logger.info('loading nuclei dataset...')
         folds = create_cv(**self._args)
         datasets = np.array([Dataset(f['pos'], f['neg']) for f in folds])
         return datasets
 
     def load(self, fold):
+        '''Get the datasets for a given fold.
+
+        Returns:
+            Returns three datasets: train, validation, and test
+        '''
         k = len(self.datasets)
         assert 0 <= fold < k
 
