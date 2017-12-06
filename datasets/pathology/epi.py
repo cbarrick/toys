@@ -152,10 +152,6 @@ def create_cv(path='./data/epi', k=5, n=10000, **kwargs):
 
     The dataset is folded for cross-validation by patient id.
 
-    The file names must follow the format:
-        - `{patient_id}_{type}_{image_id}_original.tif` for originals.
-        - `{patient_id}_{type}_{image_id}_original.tif` for positive masks.
-
     Kwargs are passed to `extract_patches`.
     '''
     logger.debug('creating cross validation folds')
