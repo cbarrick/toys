@@ -30,7 +30,7 @@ def main(**kwargs):
     kwargs.setdefault('batch_size', 128)
     kwargs.setdefault('cuda', None)
     kwargs.setdefault('dry_run', False)
-    kwargs.setdefault('name', 'pathology')
+    kwargs.setdefault('name', None)
     kwargs.setdefault('verbose', 'WARN')
     kwargs.setdefault('task', 'nuclei')
     args = SimpleNamespace(**kwargs)
@@ -40,11 +40,6 @@ def main(**kwargs):
         style='{',
         format='[{levelname:.4}][{asctime}][{name}:{lineno}] {msg}',
     )
-
-    net = AlexNet(2)
-    opt = O.Adam(net.parameters(), lr=args.learning_rate)
-    loss = N.CrossEntropyLoss()
-    model = Classifier(net, opt, loss, name=args.name, cuda=args.cuda, dry_run=args.dry_run)
 
     datasets = {
         'nuclei': NucleiSegmentation(n=args.data_size, k=args.folds),
@@ -58,10 +53,17 @@ def main(**kwargs):
         'f-score': f_score,
     }
 
+    if args.name is None:
+        now = np.datetime64('now')
+        args.name = f'{args.task}-{now}'
+
     for f in range(args.folds):
         print(f'================================ Fold {f} ================================')
+        net = AlexNet(2)
+        opt = O.Adam(net.parameters(), lr=args.learning_rate)
+        loss = N.CrossEntropyLoss()
+        model = Classifier(net, opt, loss, name=args.name, cuda=args.cuda, dry_run=args.dry_run)
         train, validation, test = datasets[args.task].load(f)
-        model.reset()
 
         print(f'-------- Training {args.task} --------')
         model.fit(train, validation, epochs=args.epochs, patience=args.patience, batch_size=args.batch_size)
