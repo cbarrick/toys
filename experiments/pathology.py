@@ -12,6 +12,7 @@ import torch.optim as O
 
 from datasets.pathology import NucleiSegmentation
 from datasets.pathology import EpitheliumSegmentation
+from datasets.pathology import TubuleSegmentation
 from networks import AlexNet
 from estimators import Classifier
 from metrics import precision, recall, f_score
@@ -48,6 +49,7 @@ def main(**kwargs):
     datasets = {
         'nuclei': NucleiSegmentation(n=args.data_size, k=args.folds),
         'epi': EpitheliumSegmentation(n=args.data_size, k=args.folds),
+        'tubule': TubuleSegmentation(n=args.data_size, k=args.folds),
     }
 
     metrics = {
