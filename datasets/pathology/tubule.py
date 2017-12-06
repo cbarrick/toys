@@ -267,7 +267,7 @@ class TubuleSegmentation:
             n (int):
                 A parameter to determine the number of
                 patches drawn from each source image.
-            size (int, default=64):
+            size (int, default=128):
                 The size of the image patches.
             pos_ratio (default=1):
                 The dataset will contain `n * pos_ratio`
