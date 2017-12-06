@@ -92,7 +92,7 @@ def edge_mask(mask_p, size=5):
     return mask_e
 
 
-def extract_from_mask(image, mask, max_count=None, size=64, random=True):
+def extract_from_mask(image, mask, max_count=None, size=128, random=True):
     '''Sample patches from an image whose centers are not masked.
     '''
     ar = np.require(image) # no copy
@@ -242,7 +242,7 @@ class NucleiSegmentation:
             n (int):
                 A parameter to determine the number of
                 patches drawn from each source image.
-            size (int, default=64):
+            size (int, default=128):
                 The size of the image patches.
             pos_ratio (default=1):
                 The dataset will contain `n * pos_ratio`

@@ -48,7 +48,7 @@ class AlexNet(N.Module):
     See https://github.com/BVLC/caffe/blob/1.0/examples/cifar10/cifar10_full.prototxt
     '''
 
-    def __init__(self, num_classes=10, shape=(3, 64, 64)):
+    def __init__(self, num_classes=10, shape=(3, 128, 128)):
         super().__init__()
 
         self.features = N.Sequential(
