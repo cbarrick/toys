@@ -1,8 +1,7 @@
 import logging
 import re
 import requests
-from tarfile import TarFile
-from tempfile import TemporaryFile
+import tarfile
 from pathlib import Path
 
 import cv2
@@ -36,21 +35,16 @@ def imread(path, mask=False):
 
 
 def download(url, dst):
-    '''Download a tar file and extract it to `dst`.
+    '''Download a tgz file and extract it to `dst`.
     '''
     url = str(url)
     dst = Path(dst)
-
-    with TemporaryFile() as fd:
-        print(f'downloading {url}')
-        r = requests.get(url, stream=True)
-        for chunk in r.iter_content(chunk_size=128):
-            fd.write(chunk)
-
-        with TarFile(fileobj=fd) as tar:
-            print(f'extracting to {dst}')
-            dst.mkdir(parents=True, exist_ok=True)
-            tar.extractall(dst)
+    print(f'downloading {url}')
+    r = requests.get(url, stream=True)
+    with tarfile.open(mode='r:gz', fileobj=r.raw) as tar:
+        print(f'extracting to {dst}')
+        dst.mkdir(parents=True, exist_ok=True)
+        tar.extractall(dst)
 
 
 def get_data(path='./data/tubule', force_download=False):
