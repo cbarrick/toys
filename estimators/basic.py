@@ -143,7 +143,7 @@ class Estimator:
         train = D.DataLoader(train, **kwargs)
 
         best_loss = float('inf')
-        p = patience
+        p = patience or -1
         for epoch in range(epochs):
 
             # Train
@@ -157,29 +157,28 @@ class Estimator:
                 print(f'epoch {epoch+1} [{progress:.2%}]', end='\r', flush=True, file=sys.stderr)
                 if self.dry_run:
                     break
-            print(f'epoch {epoch+1} [Train loss: {train_loss:8.6f}]', end='', flush=True)
+            print('\001b[2K', end='\r', flush=True, file=sys.stderr)  # ANSI escape code to clear line
+            print(f'epoch {epoch+1}', end=' ', flush=True)
+            print(f'[Train loss: {train_loss:8.6f}]', end=' ', flush=True)
 
             # Validate
             if validation:
                 val_loss = self.test(validation, **kwargs)
-                print(f' [Validation loss: {val_loss:8.6f}]', end='')
+                print(f'[Validation loss: {val_loss:8.6f}]', end=' ', flush=True)
             print(flush=True)
 
             # Early stopping
-            if validation:
-                loss = val_loss
-                if loss < best_loss:
-                    best_loss = loss
-                    p = patience
-                    self.save()
-                else:
-                    p -= 1
-                    if p == 0:
-                        self.load()
-                        break
+            loss = val_loss if validation else train_loss
+            if loss < best_loss:
+                best_loss = loss
+                p = patience or -1
+                self.save()
             else:
-                loss = train_loss
+                p -= 1
+                if p == 0:
+                    break
 
+        self.load()
         return loss
 
     def predict(self, x):
