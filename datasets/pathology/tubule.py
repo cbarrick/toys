@@ -39,10 +39,10 @@ def download(url, dst):
     '''
     url = str(url)
     dst = Path(dst)
-    print(f'downloading {url}')
+    logger.info(f'downloading {url}')
     r = requests.get(url, stream=True)
     with tarfile.open(mode='r:gz', fileobj=r.raw) as tar:
-        print(f'extracting to {dst}')
+        logger.info(f'extracting to {dst}')
         dst.mkdir(parents=True, exist_ok=True)
         tar.extractall(dst)
 
