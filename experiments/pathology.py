@@ -49,8 +49,8 @@ def main(**kwargs):
     }
 
     networks = {
-        'alex': AlexNet(2, shape=(3, 128, 128)),
-        'vgg': Vgg16(2, shape=(3, 128, 128)),
+        'alex': AlexNet(2, shape=(3, 32, 32)),
+        'vgg': Vgg16(2, shape=(3, 32, 32)),
     }
 
     metrics = {
