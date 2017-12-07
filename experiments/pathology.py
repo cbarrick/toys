@@ -25,7 +25,7 @@ logger = logging.getLogger()
 def main(**kwargs):
     kwargs.setdefault('data_size', 10000)
     kwargs.setdefault('folds', 5)
-    kwargs.setdefault('epochs', 100)
+    kwargs.setdefault('epochs', 600)
     kwargs.setdefault('learning_rate', 0.001)
     kwargs.setdefault('patience', None)
     kwargs.setdefault('batch_size', 128)
