@@ -92,7 +92,7 @@ def edge_mask(mask_p, dilation=5):
     return mask_e
 
 
-def extract_from_mask(image, mask, max_count=500, size=32, random=True):
+def extract_from_mask(image, mask, size, max_count=500, random=True):
     '''Sample patches from an image whose centers are not masked.
     '''
     ar = np.require(image) # no copy
@@ -127,7 +127,7 @@ def extract_from_mask(image, mask, max_count=500, size=32, random=True):
         yield patch
 
 
-def extract_patches(image, mask_p, n=500, pos_ratio=1, edge_ratio=1, bg_ratio=0.3):
+def extract_patches(image, mask_p, size, n=500, pos_ratio=1, edge_ratio=1, bg_ratio=0.3):
     '''Samples labeled patches from an image given a positive mask.
 
     The negative class is sampled from an edge mask and a background mask,
@@ -140,9 +140,9 @@ def extract_patches(image, mask_p, n=500, pos_ratio=1, edge_ratio=1, bg_ratio=0.
     mask_b = background_mask(image)
 
     # get patches for each mask
-    p = list(extract_from_mask(image, mask_p, int(n * pos_ratio), random=True))
-    e = list(extract_from_mask(image, mask_e, int(n * edge_ratio), random=True))
-    b = list(extract_from_mask(image, mask_b, int(n * bg_ratio), random=True))
+    p = list(extract_from_mask(image, mask_p, size, int(n * pos_ratio), random=True))
+    e = list(extract_from_mask(image, mask_e, size, int(n * edge_ratio), random=True))
+    b = list(extract_from_mask(image, mask_b, size, int(n * bg_ratio), random=True))
 
     # separate into positive and negative classes
     pos = p
