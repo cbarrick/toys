@@ -155,7 +155,7 @@ def extract_patches(image, mask_p, size, n=500, pos_ratio=1, edge_ratio=1, bg_ra
     return pos, neg
 
 
-def create_cv(path='./data/nuclei', k=5, n=500, **kwargs):
+def create_cv(path='./data/nuclei', k=5, **kwargs):
     '''Extract a training set of patches taken from all images in a directory.
 
     The dataset is folded for cross-validation by patient id.
@@ -177,7 +177,7 @@ def create_cv(path='./data/nuclei', k=5, n=500, **kwargs):
         image = imread(image_path)
         mask_p = imread(mask_path, mask=True)
         meta = get_metadata(image_path)
-        pos, neg = extract_patches(image, mask_p, n, **kwargs)
+        pos, neg = extract_patches(image, mask_p, **kwargs)
         f = hash(meta['patient']) % k
         folds[f]['pos'].extend(pos)
         folds[f]['neg'].extend(neg)
