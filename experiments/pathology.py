@@ -62,18 +62,27 @@ def main(**kwargs):
     if args.name is None:
         now = np.datetime64('now')
         args.name = f'{args.task}-{now}'
+        logger.info(f'experiment name not given, defaulting to {args.name}')
+
+    net, data = args.task.split(':')
+    data = datasets[data]
+    net = networks[net]
+
+    # In some cases, we must move the network to it's cuda device before
+    # constructing the optimizer. This is annoying, and this logic is
+    # duplicated in the estimator class. Ideally, I'd like the estimator to
+    # handle cuda allocation _after_ the optimizer is constructed...
+    if args.cuda is None:
+        args.cuda = 0 if torch.cuda.is_available() else False
+    if args.cuda is not False:
+        net = net.cuda(args.cuda)
 
     for f in range(args.folds):
         print(f'================================ Fold {f} ================================')
-        net, data = args.task.split(':')
-
-        net = networks[net]
-        opt = O.Adam(net.parameters(), lr=args.learning_rate)
+        train, validation, test = data.load(f)
+        opt = O.Adagrad(net.parameters(), lr=args.learning_rate)
         loss = N.CrossEntropyLoss()
         model = Classifier(net, opt, loss, name=args.name, cuda=args.cuda, dry_run=args.dry_run)
-
-        data = datasets[data]
-        train, validation, test = data.load(f)
 
         print(f'-------- Training {args.task} --------')
         model.fit(train, validation, epochs=args.epochs, patience=args.patience, batch_size=args.batch_size)
