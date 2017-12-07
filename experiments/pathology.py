@@ -13,7 +13,7 @@ import torch.optim as O
 from datasets.pathology import NucleiSegmentation
 from datasets.pathology import EpitheliumSegmentation
 from datasets.pathology import TubuleSegmentation
-from networks import AlexNet
+from networks import VGG16
 from estimators import Classifier
 from metrics import precision, recall, f_score
 
@@ -59,7 +59,7 @@ def main(**kwargs):
 
     for f in range(args.folds):
         print(f'================================ Fold {f} ================================')
-        net = AlexNet(2)
+        net = VGG16(2)
         opt = O.Adam(net.parameters(), lr=args.learning_rate)
         loss = N.CrossEntropyLoss()
         model = Classifier(net, opt, loss, name=args.name, cuda=args.cuda, dry_run=args.dry_run)
