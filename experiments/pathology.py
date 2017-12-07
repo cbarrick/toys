@@ -23,7 +23,7 @@ logger = logging.getLogger()
 
 
 def main(**kwargs):
-    kwargs.setdefault('data_size', 10000)
+    kwargs.setdefault('data_size', 500)
     kwargs.setdefault('folds', 5)
     kwargs.setdefault('epochs', 600)
     kwargs.setdefault('learning_rate', 0.001)
@@ -43,9 +43,9 @@ def main(**kwargs):
     )
 
     datasets = {
-        'nuclei': NucleiSegmentation(n=args.data_size, k=args.folds),
-        'epi': EpitheliumSegmentation(n=args.data_size, k=args.folds),
-        'tubule': TubuleSegmentation(n=args.data_size, k=args.folds),
+        'nuclei': NucleiSegmentation(n=args.data_size, k=args.folds, size=32),
+        'epi': EpitheliumSegmentation(n=args.data_size, k=args.folds, size=32),
+        'tubule': TubuleSegmentation(n=args.data_size, k=args.folds, size=32),
     }
 
     networks = {

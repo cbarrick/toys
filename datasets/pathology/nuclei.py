@@ -81,10 +81,10 @@ def background_mask(image):
     return mask_b
 
 
-def edge_mask(mask_p, size=5):
+def edge_mask(mask_p, dilation=5):
     '''Creates a mask around the outer edges of the positive class.
     '''
-    k = np.ones((size, size))
+    k = np.ones((dilation, dilation))
     mask_p = mask_p.astype('uint8')
     edges = cv2.dilate(mask_p, k)
     edges = edges - mask_p
@@ -92,7 +92,7 @@ def edge_mask(mask_p, size=5):
     return mask_e
 
 
-def extract_from_mask(image, mask, max_count=None, size=128, random=True):
+def extract_from_mask(image, mask, max_count=500, size=32, random=True):
     '''Sample patches from an image whose centers are not masked.
     '''
     ar = np.require(image) # no copy
@@ -127,7 +127,7 @@ def extract_from_mask(image, mask, max_count=None, size=128, random=True):
         yield patch
 
 
-def extract_patches(image, mask_p, n, pos_ratio=1, edge_ratio=1, bg_ratio=0.3):
+def extract_patches(image, mask_p, n=500, pos_ratio=1, edge_ratio=1, bg_ratio=0.3):
     '''Samples labeled patches from an image given a positive mask.
 
     The negative class is sampled from an edge mask and a background mask,
@@ -155,7 +155,7 @@ def extract_patches(image, mask_p, n, pos_ratio=1, edge_ratio=1, bg_ratio=0.3):
     return pos, neg
 
 
-def create_cv(path='./data/nuclei', k=5, n=10000, **kwargs):
+def create_cv(path='./data/nuclei', k=5, n=500, **kwargs):
     '''Extract a training set of patches taken from all images in a directory.
 
     The dataset is folded for cross-validation by patient id.
@@ -242,7 +242,7 @@ class NucleiSegmentation:
             n (int):
                 A parameter to determine the number of
                 patches drawn from each source image.
-            size (int, default=128):
+            size (int, default=32):
                 The size of the image patches.
             pos_ratio (default=1):
                 The dataset will contain `n * pos_ratio`
