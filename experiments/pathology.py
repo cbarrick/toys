@@ -14,7 +14,7 @@ from datasets.pathology import NucleiSegmentation
 from datasets.pathology import EpitheliumSegmentation
 from datasets.pathology import TubuleSegmentation
 from networks import AlexNet
-from networks import VGG16
+from networks import Vgg16
 from estimators import Classifier
 from metrics import precision, recall, f_score
 
@@ -50,7 +50,7 @@ def main(**kwargs):
 
     networks = {
         'alex': AlexNet(2, shape=(3, 128, 128)),
-        'vgg': VGG16(2, shape=(3, 128, 128)),
+        'vgg': Vgg16(2, shape=(3, 128, 128)),
     }
 
     metrics = {
