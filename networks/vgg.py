@@ -40,11 +40,11 @@ class Vgg16(N.Module):
         super().__init__()
 
         self.features = N.Sequential(
-            VggBlock2d(shape[0], 64, 64)
-            VggBlock2d(64, 128, 128)
-            VggBlock2d(128, 256, 256, 256)
-            VggBlock2d(256, 512, 512, 512)
-            VggBlock2d(512, 512, 512, 512)
+            VggBlock2d(shape[0], 64, 64),
+            VggBlock2d(64, 128, 128),
+            VggBlock2d(128, 256, 256, 256),
+            VggBlock2d(256, 512, 512, 512),
+            VggBlock2d(512, 512, 512, 512),
         )
 
         n = int(np.ceil(shape[1] / 2 / 2 / 2 / 2 / 2))
