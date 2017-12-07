@@ -1,7 +1,12 @@
+import logging
+
 import numpy as np
 
 import torch
 import torch.nn as N
+
+
+logger = logging.getLogger(__name__)
 
 
 class VggBlock2d(N.Module):
