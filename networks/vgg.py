@@ -54,7 +54,6 @@ class Vgg16(N.Module):
 
         n = int(np.ceil(shape[1] / 2 / 2 / 2 / 2 / 2))
         m = int(np.ceil(shape[2] / 2 / 2 / 2 / 2 / 2))
-        logger.debug(f'vgg expected shape {512*n*m}')
         self.frontend = VggFrontend(512*n*m, 4096, 4096, num_classes)
 
         self.reset()
@@ -62,7 +61,6 @@ class Vgg16(N.Module):
     def forward(self, x):
         x = self.cnn(x)
         x = x.view(x.size(0), -1)
-        logger.debug(f'vgg got shape {x.size(1)}')
         x = self.frontend(x)
         return x
 
