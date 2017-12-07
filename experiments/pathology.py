@@ -13,6 +13,7 @@ import torch.optim as O
 from datasets.pathology import NucleiSegmentation
 from datasets.pathology import EpitheliumSegmentation
 from datasets.pathology import TubuleSegmentation
+from networks import AlexNet
 from networks import VGG16
 from estimators import Classifier
 from metrics import precision, recall, f_score
@@ -32,7 +33,7 @@ def main(**kwargs):
     kwargs.setdefault('dry_run', False)
     kwargs.setdefault('name', None)
     kwargs.setdefault('verbose', 'WARN')
-    kwargs.setdefault('task', 'nuclei')
+    kwargs.setdefault('task', 'alex:nuclei')
     args = SimpleNamespace(**kwargs)
 
     logging.basicConfig(
@@ -47,6 +48,11 @@ def main(**kwargs):
         'tubule': TubuleSegmentation(n=args.data_size, k=args.folds),
     }
 
+    networks = {
+        'alex': AlexNet(2, shape=(3, 128, 128)),
+        'vgg': VGG16(2, shape=(3, 128, 128)),
+    }
+
     metrics = {
         'precision': precision,
         'recall': recall,
@@ -59,11 +65,15 @@ def main(**kwargs):
 
     for f in range(args.folds):
         print(f'================================ Fold {f} ================================')
-        net = VGG16(2, shape=(3, 128, 128))
+        net, data = args.task.split(':')
+
+        net = networks[net]
         opt = O.Adam(net.parameters(), lr=args.learning_rate)
         loss = N.CrossEntropyLoss()
         model = Classifier(net, opt, loss, name=args.name, cuda=args.cuda, dry_run=args.dry_run)
-        train, validation, test = datasets[args.task].load(f)
+
+        data = datasets[data]
+        train, validation, test = data.load(f)
 
         print(f'-------- Training {args.task} --------')
         model.fit(train, validation, epochs=args.epochs, patience=args.patience, batch_size=args.batch_size)
@@ -87,7 +97,7 @@ if __name__ == '__main__':
         argument_default=argparse.SUPPRESS,
     )
 
-    parser.add_argument('task', metavar='TASK', help='The dataset with which to experiment.')
+    parser.add_argument('task', metavar='TASK', help='The task for this experiment.')
 
     group = parser.add_argument_group('Hyper-parameters')
     group.add_argument('-n', '--data-size', metavar='N', type=int, help='The number of training samples is a function of N.')
