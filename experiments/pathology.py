@@ -59,7 +59,7 @@ def main(**kwargs):
 
     for f in range(args.folds):
         print(f'================================ Fold {f} ================================')
-        net = VGG16(2)
+        net = VGG16(2, shape=(3, 128, 128))
         opt = O.Adam(net.parameters(), lr=args.learning_rate)
         loss = N.CrossEntropyLoss()
         model = Classifier(net, opt, loss, name=args.name, cuda=args.cuda, dry_run=args.dry_run)

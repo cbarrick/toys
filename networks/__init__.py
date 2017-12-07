@@ -1,2 +1,5 @@
 from .alexnet import AlexNet
-from .vgg16 import VGG16
+
+from .vgg import VggBlock2d
+from .vgg import VggFrontend
+from .vgg import Vgg16
