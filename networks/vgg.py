@@ -15,7 +15,7 @@ class VggBlock2d(N.Module):
         layers = []
         n = len(chans)
         for i in range(n-1):
-            conv = N.Conv2d(chans[i], chans[i+1], kernel_size=3, stride=1, padding=2)
+            conv = N.Conv2d(chans[i], chans[i+1], kernel_size=3, stride=1, padding=1)
             relu = N.ReLU(inplace=True)
             layers += [conv, relu]
         layers += [N.MaxPool2d(kernel_size=2, stride=2)]
