@@ -39,7 +39,7 @@ class Vgg16(N.Module):
     def __init__(self, num_classes=10, shape=(3, 224, 224)):
         super().__init__()
 
-        self.features = N.Sequential(
+        self.cnn = N.Sequential(
             VggBlock2d(shape[0], 64, 64),
             VggBlock2d(64, 128, 128),
             VggBlock2d(128, 256, 256, 256),
@@ -49,14 +49,16 @@ class Vgg16(N.Module):
 
         n = int(np.ceil(shape[1] / 2 / 2 / 2 / 2 / 2))
         m = int(np.ceil(shape[2] / 2 / 2 / 2 / 2 / 2))
-        self.classifier = VggFrontend(512*n*m, 4096, 4096, num_classes)
+        logger.debug(f'vgg expected shape {512*n*m}')
+        self.frontend = VggFrontend(512*n*m, 4096, 4096, num_classes)
 
         self.reset()
 
     def forward(self, x):
-        x = self.features(x)
+        x = self.cnn(x)
         x = x.view(x.size(0), -1)
-        x = self.classifier(x)
+        logger.debug(f'vgg got shape {x.size(1)}')
+        x = self.frontend(x)
         return x
 
     def reset(self):
