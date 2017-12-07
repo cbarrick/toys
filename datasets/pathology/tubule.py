@@ -253,7 +253,7 @@ class Dataset(torch.utils.data.Dataset):
 
 
 class TubuleSegmentation:
-    '''A cross-validation loader for the nuclei segmentation dataset.
+    '''A cross-validation loader for the tubule segmentation dataset.
     '''
 
     def __init__(self, **kwargs):
@@ -282,7 +282,7 @@ class TubuleSegmentation:
     def datasets(self):
         '''The list of datasets, one for each fold.
         '''
-        logger.info('loading nuclei dataset...')
+        logger.info('loading tubule dataset...')
         folds = create_cv(**self._args)
         datasets = np.array([Dataset(f['pos'], f['neg']) for f in folds])
         return datasets
