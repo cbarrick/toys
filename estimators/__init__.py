@@ -1,2 +1,2 @@
-from .basic import Estimator
-from .basic import Classifier
+from .core import Estimator
+from .core import Classifier
