@@ -54,7 +54,6 @@ class Estimator:
         '''
         if path is None:
             path = self.path
-        logger.info(f'saving {self.name} to {path}')
         state = self.net.state_dict()
         torch.save(state, str(path))
         return self
@@ -64,7 +63,6 @@ class Estimator:
         '''
         if path is None:
             path = self.path
-        logger.info(f'restoring {self.name} from {path}')
         state = torch.load(str(path))
         self.net.load_state_dict(state)
         return self
@@ -165,7 +163,6 @@ class Estimator:
             if validation:
                 val_loss = self.test(validation, **kwargs)
                 print(f'[Validation loss: {val_loss:8.6f}]', end=' ', flush=True)
-            print(flush=True)
 
             # Early stopping
             loss = val_loss if validation else train_loss
@@ -173,10 +170,13 @@ class Estimator:
                 best_loss = loss
                 p = patience or -1
                 self.save()
+                print('✓', end=' ', flush=True)
             else:
                 p -= 1
-                if p == 0:
-                    break
+
+            print()
+            if p == 0:
+                break
 
         self.load()
         return loss
