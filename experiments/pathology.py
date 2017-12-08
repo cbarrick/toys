@@ -90,7 +90,7 @@ def main(**kwargs):
             if task[0] == '+':
                 print(f'-------- Fitting {task[1:]} --------')
                 model.fit(train, validation, epochs=args.epochs, patience=args.patience, batch_size=args.batch_size)
-                model.consolidate(validation, alpha=args.ewc, epochs=args.epochs, patience=args.patience, batch_size=args.batch_size)
+                model.consolidate(validation, alpha=args.ewc, batch_size=args.batch_size)
                 print()
 
             if task[0] == '-':
