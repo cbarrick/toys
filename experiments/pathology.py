@@ -33,6 +33,24 @@ def seed(n):
     torch.cuda.manual_seed_all(n)
 
 
+def fit(model, train, validation, **kwargs):
+    print(f'-------- Fitting {task} --------')
+    model.fit(train, validation, **kwargs)
+    print()
+
+
+def score(model, test, **kwargs):
+    print(f'-------- Scoring {task} --------')
+    scores = {
+        'precision': model.test(test, precision, **kwargs),
+        'recall': model.test(test, recall, **kwargs),
+        'f-score': model.test(test, f_score, **kwargs),
+    }
+    for metric in scores:
+        print(f'{metric:.10}: {scores[metric]}')
+    print()
+
+
 def main(**kwargs):
     kwargs.setdefault('data_size', 500)
     kwargs.setdefault('folds', 5)
@@ -45,7 +63,7 @@ def main(**kwargs):
     kwargs.setdefault('name', None)
     kwargs.setdefault('seed', 1337)
     kwargs.setdefault('verbose', 'WARN')
-    kwargs.setdefault('task', 'alex:nuclei')
+    kwargs.setdefault('task', ['+nuclei', '-nuclei'])
     args = SimpleNamespace(**kwargs)
 
     logging.basicConfig(
@@ -62,30 +80,15 @@ def main(**kwargs):
         'tubule': TubuleSegmentation(n=args.data_size, k=args.folds, size=32),
     }
 
-    networks = {
-        'alex': AlexNet(2, shape=(3, 32, 32)),
-        'vgg': Vgg16(2, shape=(3, 32, 32)),
-    }
-
-    metrics = {
-        'precision': precision,
-        'recall': recall,
-        'f-score': f_score,
-    }
-
     if args.name is None:
         now = np.datetime64('now')
-        args.name = f'{args.task}-{now}'
+        args.name = f'{args.tasks}-{now}'
         logger.info(f'experiment name not given, defaulting to {args.name}')
-
-    net, data = args.task.split(':')
-    data = datasets[data]
-    net = networks[net]
 
     # In some cases, we must move the network to it's cuda device before
     # constructing the optimizer. This is annoying, and this logic is
     # duplicated in the estimator class. Ideally, I'd like the estimator to
-    # handle cuda allocation _after_ the optimizer is constructed...
+    # handle cuda allocation _after_ the optimizer has been constructed...
     if args.cuda is None:
         args.cuda = 0 if torch.cuda.is_available() else False
     if args.cuda is not False:
@@ -93,21 +96,34 @@ def main(**kwargs):
 
     for f in range(args.folds):
         print(f'================================ Fold {f} ================================')
-        train, validation, test = data.load(f)
+        net = AlexNet(2, shape=(3, 32, 32))
         opt = O.Adagrad(net.parameters(), lr=args.learning_rate)
         loss = N.CrossEntropyLoss()
         model = Classifier(net, opt, loss, name=args.name, cuda=args.cuda, dry_run=args.dry_run)
 
-        print(f'-------- Training {args.task} --------')
-        model.fit(train, validation, epochs=args.epochs, patience=args.patience, batch_size=args.batch_size)
-        print()
+        for task in args.tasks:
+            data = datasets[task[1:]]
+            train, validation, test = data.load(f)
 
-        print(f'-------- Scoring {args.task} --------')
-        for metric, criteria in metrics.items():
-            print(f'{metric:.10}: ', end='', flush=True)
-            z = model.test(test, criteria, batch_size=args.batch_size)
-            print(z)
-        print()
+            if task[0] == '+':
+                print(f'-------- Fitting {task} --------')
+                model.fit(train, validation,
+                    epochs=args.epochs,
+                    patience=args.patience,
+                    batch_size=args.batch_size,
+                )
+                print()
+
+            if task[0] == '-':
+                print(f'-------- Scoring {task} --------')
+                scores = {
+                    'precision': model.test(test, precision, batch_size=args.batch_size),
+                    'recall': model.test(test, recall, batch_size=args.batch_size),
+                    'f-score': model.test(test, f_score, batch_size=args.batch_size),
+                }
+                for metric in scores:
+                    print(f'{metric:.10}: {scores[metric]}')
+                print()
 
         if args.dry_run:
             break
@@ -120,7 +136,8 @@ if __name__ == '__main__':
         argument_default=argparse.SUPPRESS,
     )
 
-    parser.add_argument('task', metavar='TASK', help='The task for this experiment.')
+    group = parser.add_argument_group('Required')
+    group.add_argument('tasks', metavar='TASK', nargs='+', help='The tasks for this experiment.')
 
     group = parser.add_argument_group('Hyper-parameters')
     group.add_argument('-n', '--data-size', metavar='N', type=int, help='The number of training samples is a function of N.')
