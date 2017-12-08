@@ -1,3 +1,7 @@
+def accuracy(y, h, **kwargs):
+    return (y == h).sum() / len(y)
+
+
 def true_positives(y, h, target=1, **kwargs):
     return ((h == target) & (y == target)).sum()
 

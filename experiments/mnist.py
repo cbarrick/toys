@@ -14,7 +14,7 @@ from datasets import MNIST
 from datasets import FashionMNIST
 from networks import AlexNet
 from estimators.ewc import EwcClassifier
-from metrics import precision, recall, f_score
+from metrics import accuracy, precision, recall, f_score
 
 
 logger = logging.getLogger()
@@ -91,6 +91,7 @@ def main(**kwargs):
         if task[0] == '-':
             print(f'-------- Scoring {task[1:]} --------')
             scores = {
+                'accuracy': model.test(test, accuracy, batch_size=args.batch_size),
                 'precision': model.test(test, precision, batch_size=args.batch_size),
                 'recall': model.test(test, recall, batch_size=args.batch_size),
                 'f-score': model.test(test, f_score, batch_size=args.batch_size),
