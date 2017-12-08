@@ -43,7 +43,7 @@ def main(**kwargs):
     kwargs.setdefault('name', None)
     kwargs.setdefault('seed', 1337)
     kwargs.setdefault('verbose', 'WARN')
-    kwargs.setdefault('task', ['+nuclei', '-nuclei'])
+    kwargs.setdefault('task', ['+mnist', '-mnist'])
     args = SimpleNamespace(**kwargs)
 
     logging.basicConfig(
