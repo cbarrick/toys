@@ -13,7 +13,8 @@ import torch.optim as O
 from datasets.pathology import NucleiSegmentation
 from datasets.pathology import EpitheliumSegmentation
 from datasets.pathology import TubuleSegmentation
-from networks import AlexNet
+# from networks import AlexNet
+from networks import VggSimple
 from estimators.ewc import EwcClassifier
 from metrics import true_positives, false_positives, true_negatives, false_negatives
 from metrics import accuracy, precision, recall, f_score
@@ -76,7 +77,7 @@ def main(**kwargs):
     # constructing the optimizer. This is annoying, and this logic is
     # duplicated in the estimator class. Ideally, I'd like the estimator to
     # handle cuda allocation _after_ the optimizer has been constructed...
-    net = AlexNet(2, shape=(3, 32, 32))
+    net = VggSimple(num_classes=2, shape=(3, 32, 32))
     if args.cuda is None:
         args.cuda = 0 if torch.cuda.is_available() else False
     if args.cuda is not False:

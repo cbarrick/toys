@@ -40,6 +40,33 @@ class VggFrontend(N.Module):
         return self.layers(x)
 
 
+class VggSimple(N.Module):
+    def __init__(self, num_classes=10, shape=(1, 27, 27)):
+        super().__init__()
+
+        self.cnn = N.Sequential(
+            VggBlock2d(shape[0], 32),
+        )
+
+        n = int(np.ceil(shape[1] / 2))
+        m = int(np.ceil(shape[2] / 2))
+        self.frontend = VggFrontend(32*n*m, 4096, num_classes)
+
+        self.reset()
+
+    def reset(self):
+         for m in self.modules():
+            if isinstance(m, (N.Conv2d, N.Linear)):
+                N.init.kaiming_uniform(m.weight)
+                N.init.constant(m.bias, 0)
+
+    def forward(self, x):
+        x = self.cnn(x)
+        x = x.view(x.size(0), -1)
+        x = self.frontend(x)
+        return x
+
+
 class Vgg16(N.Module):
     def __init__(self, num_classes=10, shape=(3, 224, 224)):
         super().__init__()
@@ -58,15 +85,14 @@ class Vgg16(N.Module):
 
         self.reset()
 
+    def reset(self):
+         for m in self.modules():
+            if isinstance(m, (N.Conv2d, N.Linear)):
+                N.init.kaiming_uniform(m.weight)
+                N.init.constant(m.bias, 0)
+
     def forward(self, x):
         x = self.cnn(x)
         x = x.view(x.size(0), -1)
         x = self.frontend(x)
         return x
-
-    def reset(self):
-        for m in self.modules():
-            if isinstance(m, (N.Conv2d, N.Linear)):
-                N.init.kaiming_uniform(m.weight.data)
-                if m.bias is not None:
-                    m.bias.data.zero_()
