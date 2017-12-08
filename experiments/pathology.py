@@ -22,6 +22,17 @@ from metrics import precision, recall, f_score
 logger = logging.getLogger()
 
 
+def seed(n):
+    '''Seed the RNGs of stdlib, numpy, and torch.'''
+    import random
+    import numpy as np
+    import torch
+    random.seed(n)
+    np.random.seed(n)
+    torch.manual_seed(n)
+    torch.cuda.manual_seed_all(n)
+
+
 def main(**kwargs):
     kwargs.setdefault('data_size', 500)
     kwargs.setdefault('folds', 5)
@@ -32,6 +43,7 @@ def main(**kwargs):
     kwargs.setdefault('cuda', None)
     kwargs.setdefault('dry_run', False)
     kwargs.setdefault('name', None)
+    kwargs.setdefault('seed', 1337)
     kwargs.setdefault('verbose', 'WARN')
     kwargs.setdefault('task', 'alex:nuclei')
     args = SimpleNamespace(**kwargs)
@@ -41,6 +53,8 @@ def main(**kwargs):
         style='{',
         format='[{levelname:.4}][{asctime}][{name}:{lineno}] {msg}',
     )
+
+    seed(args.seed)
 
     datasets = {
         'nuclei': NucleiSegmentation(n=args.data_size, k=args.folds, size=32),
@@ -124,6 +138,7 @@ if __name__ == '__main__':
     group.add_argument('-v', '--verbose', action='store_const', const='DEBUG', help='Turn on debug logging.')
 
     group = parser.add_argument_group('Other')
+    group.add_argument('--seed', help='Sets the random seed for the experiment, defaults to 1337.')
     group.add_argument('--name', type=str, help='Sets a name for the experiment.')
     group.add_argument('--help', action='help', help='Show this help message and exit.')
 
