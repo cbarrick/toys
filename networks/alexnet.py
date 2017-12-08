@@ -45,48 +45,62 @@ class LRN(N.Module):
 class AlexNet(N.Module):
     '''An AlexNet-like model based on the CIFAR-10 variant of AlexNet in Caffe.
 
-    See https://github.com/BVLC/caffe/blob/1.0/examples/cifar10/cifar10_full.prototxt
+    See:
+        The Caffe version of this network
+            https://github.com/BVLC/caffe/blob/1.0/examples/cifar10/cifar10_full.prototxt
+        The Janowczyk and Madabhushi version, without dropout
+            https://github.com/choosehappy/public/blob/master/DL%20tutorial%20Code/common/BASE-alexnet_traing_32w_db.prototxt
+        The Janowczyk and Madabhushi version, with dropout
+            https://github.com/choosehappy/public/blob/master/DL%20tutorial%20Code/common/BASE-alexnet_traing_32w_dropout_db.prototxt
     '''
 
     def __init__(self, num_classes=10, shape=(3, 128, 128)):
         super().__init__()
 
+        # The Caffe version of this network uses LRN layers,
+        # but Janowczyk and Madabhushi do not.
         self.features = N.Sequential(
             N.Conv2d(shape[0], 32, kernel_size=5, stride=1, padding=2),
             N.MaxPool2d(kernel_size=3, stride=2, padding=1),
             N.ReLU(inplace=True),
-            LRN(3, alpha=5e-5, beta=0.75, cross_channel=False),
 
             N.Conv2d(32, 32, kernel_size=5, stride=1, padding=2),
             N.ReLU(inplace=True),
             N.AvgPool2d(kernel_size=3, stride=2, padding=1),
-            LRN(3, alpha=5e-5, beta=0.75, cross_channel=False),
 
             N.Conv2d(32, 64, kernel_size=5, stride=1, padding=2),
             N.ReLU(inplace=True),
             N.AvgPool2d(kernel_size=3, stride=2, padding=1),
         )
 
+        # Janowczyk and Madabhushi do NOT have an activation between the linear
+        # layers. This is clearly a bug, since two linear layers reduce to a
+        # single layer. The dropout version of the network _does_ have ReLUs
+        # after _both_ layers. In that case, the final ReLU seems odd.
         n = int(np.ceil(shape[1] / 2 / 2 / 2))
         m = int(np.ceil(shape[2] / 2 / 2 / 2))
         self.classifier = N.Sequential(
             N.Linear(64*n*m, 64),
-            N.ReLU(inplace=True),
-            N.Dropout(),
             N.Linear(64, num_classes),
         )
 
         self.reset()
+
+    def reset(self):
+        # The initialization scheme is taken from Janowczyk and Madabhushi.
+        self.features[0].weight.data.normal_(std=0.001)
+        self.features[0].bias.data.zero_()
+        self.features[3].weight.data.normal_(std=0.01)
+        self.features[3].bias.data.zero_()
+        self.features[6].weight.data.normal_(std=0.01)
+        self.features[6].bias.data.zero_()
+        self.classifier[0].weight.data.normal_(std=0.1)
+        self.classifier[0].bias.data.zero_()
+        self.classifier[2].weight.data.normal_(std=0.1)
+        self.classifier[2].bias.data.zero_()
 
     def forward(self, x):
         x = self.features(x)
         x = x.view(x.size(0), -1)
         x = self.classifier(x)
         return x
-
-    def reset(self):
-        for m in self.modules():
-            if isinstance(m, (N.Conv2d, N.Linear)):
-                N.init.kaiming_uniform(m.weight.data)
-                if m.bias is not None:
-                    m.bias.data.zero_()
