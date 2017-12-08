@@ -14,7 +14,6 @@ from datasets.pathology import NucleiSegmentation
 from datasets.pathology import EpitheliumSegmentation
 from datasets.pathology import TubuleSegmentation
 from networks import AlexNet
-from networks import Vgg16
 from estimators import Classifier
 from metrics import precision, recall, f_score
 
