@@ -33,24 +33,6 @@ def seed(n):
     torch.cuda.manual_seed_all(n)
 
 
-def fit(model, train, validation, **kwargs):
-    print(f'-------- Fitting {task} --------')
-    model.fit(train, validation, **kwargs)
-    print()
-
-
-def score(model, test, **kwargs):
-    print(f'-------- Scoring {task} --------')
-    scores = {
-        'precision': model.test(test, precision, **kwargs),
-        'recall': model.test(test, recall, **kwargs),
-        'f-score': model.test(test, f_score, **kwargs),
-    }
-    for metric in scores:
-        print(f'{metric:.10}: {scores[metric]}')
-    print()
-
-
 def main(**kwargs):
     kwargs.setdefault('data_size', 500)
     kwargs.setdefault('folds', 5)
