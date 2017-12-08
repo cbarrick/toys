@@ -107,8 +107,8 @@ def main(**kwargs):
                     print(f'{metric:.10}: {scores[metric]}')
                 print()
 
-        if args.dry_run:
-            break
+            if args.dry_run:
+                break
 
 
 if __name__ == '__main__':
