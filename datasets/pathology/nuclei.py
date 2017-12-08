@@ -127,7 +127,7 @@ def extract_from_mask(image, mask, size, max_count=500, random=True):
         yield patch
 
 
-def extract_patches(image, mask_p, size, n=500, pos_ratio=1, edge_ratio=1, bg_ratio=0.3):
+def extract_patches(image, mask_p, size=32, n=500, pos_ratio=1, edge_ratio=1, bg_ratio=0.3):
     '''Samples labeled patches from an image given a positive mask.
 
     The negative class is sampled from an edge mask and a background mask,

@@ -148,7 +148,7 @@ def sample_patch_idx(mask, max_count=None):
     return idx
 
 
-def extract_from_mask(image, mask, max_count=None, size=128):
+def extract_from_mask(image, mask, size, max_count=None):
     '''Sample patches from a mask.
 
     The higher the value of the pixel in the mask, the more likely a patch is
@@ -170,7 +170,7 @@ def extract_from_mask(image, mask, max_count=None, size=128):
         yield image[i-delta:i+delta, j-delta:j+delta]
 
 
-def extract_patches(image, mask, n, pos_ratio=1, bg_ratio=1):
+def extract_patches(image, mask, size=32, n=500, pos_ratio=1, bg_ratio=1):
     '''Samples labeled patches from an image given a positive mask.
 
     A patch is more likely to be sampled if a naive bayes classifier is worse
@@ -180,8 +180,8 @@ def extract_patches(image, mask, n, pos_ratio=1, bg_ratio=1):
     mask_p, mask_b = soft_masks(image, mask)
 
     # get patches for each mask
-    pos = list(extract_from_mask(image, mask_p, max_count=int(n * pos_ratio)))
-    neg = list(extract_from_mask(image, mask_b, max_count=int(n * bg_ratio)))
+    pos = list(extract_from_mask(image, mask_p, size, max_count=int(n * pos_ratio)))
+    neg = list(extract_from_mask(image, mask_b, size, max_count=int(n * bg_ratio)))
 
     # if the classes are imbalanced, throw away some extras
     if len(neg) < len(pos):
@@ -190,7 +190,7 @@ def extract_patches(image, mask, n, pos_ratio=1, bg_ratio=1):
     return pos, neg
 
 
-def create_cv(path='./data/tubule', k=5, n=10000, **kwargs):
+def create_cv(path='./data/tubule', k=5, **kwargs):
     '''Extract a training set of patches taken from all images in a directory.
 
     The dataset is folded for cross-validation by patient id.
@@ -202,7 +202,7 @@ def create_cv(path='./data/tubule', k=5, n=10000, **kwargs):
     folds = [{'pos':[], 'neg':[]} for _ in range(k)]
 
     for i, x in enumerate(data):
-        pos, neg = extract_patches(x['image'], x['mask'], n, **kwargs)
+        pos, neg = extract_patches(x['image'], x['mask'], **kwargs)
         f = hash(x['patient']) % k
         folds[f]['pos'].extend(pos)
         folds[f]['neg'].extend(neg)
