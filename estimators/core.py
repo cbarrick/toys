@@ -31,9 +31,9 @@ class Estimator:
         if cuda is not False:
             net = net.cuda(cuda)
 
-        self.net = net
-        self.opt = opt
-        self.loss = loss
+        self._net = net
+        self._opt = opt
+        self._loss = loss
         self.name = name
         self.cuda = cuda
         self.dry_run = dry_run
@@ -42,6 +42,17 @@ class Estimator:
         self.path = Path(f'./checkpoints/{self.name}.torch')
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.path.touch()
+
+    @property
+    def net(self):
+        return self._net
+
+    @property
+    def opt(self):
+        return self._opt
+
+    def loss(self, *args, **kwargs):
+        return self._loss(*args, **kwargs)
 
     def reset(self):
         '''Reset the estimator to it's initial state.

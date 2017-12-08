@@ -14,7 +14,7 @@ from datasets.pathology import NucleiSegmentation
 from datasets.pathology import EpitheliumSegmentation
 from datasets.pathology import TubuleSegmentation
 from networks import AlexNet
-from estimators import Classifier
+from estimators.ewc import EwcClassifier
 from metrics import precision, recall, f_score
 
 
@@ -38,6 +38,7 @@ def main(**kwargs):
     kwargs.setdefault('epochs', 600)
     kwargs.setdefault('learning_rate', 0.001)
     kwargs.setdefault('patience', None)
+    kwargs.setdefault('ewc', 0)
     kwargs.setdefault('batch_size', 128)
     kwargs.setdefault('cuda', None)
     kwargs.setdefault('dry_run', False)
@@ -80,7 +81,7 @@ def main(**kwargs):
         print(f'================================ Fold {f} ================================')
         opt = O.Adagrad(net.parameters(), lr=args.learning_rate)
         loss = N.CrossEntropyLoss()
-        model = Classifier(net, opt, loss, name=args.name, cuda=args.cuda, dry_run=args.dry_run)
+        model = EwcClassifier(net, opt, loss, name=args.name, cuda=args.cuda, dry_run=args.dry_run)
 
         for task in args.tasks:
             data = datasets[task[1:]]
@@ -88,11 +89,8 @@ def main(**kwargs):
 
             if task[0] == '+':
                 print(f'-------- Fitting {task[1:]} --------')
-                model.fit(train, validation,
-                    epochs=args.epochs,
-                    patience=args.patience,
-                    batch_size=args.batch_size,
-                )
+                model.fit(train, validation, epochs=args.epochs, patience=args.patience, batch_size=args.batch_size)
+                model.consolidate(validation, alpha=args.ewc, epochs=args.epochs, patience=args.patience, batch_size=args.batch_size)
                 print()
 
             if task[0] == '-':
@@ -126,6 +124,7 @@ if __name__ == '__main__':
     group.add_argument('-e', '--epochs', metavar='N', type=int, help='The maximum number of epochs per task.')
     group.add_argument('-l', '--learning-rate', metavar='N', type=float, help='The learning rate.')
     group.add_argument('-p', '--patience', metavar='N', type=int, help='Higher patience may help avoid local minima.')
+    group.add_argument('-w', '--ewc', metavar='N', type=float, help='The regularization strength of ewc. Defaults to 0.')
 
     group = parser.add_argument_group('Performance')
     group.add_argument('-b', '--batch-size', metavar='N', type=int, help='The batch size.')
@@ -136,7 +135,7 @@ if __name__ == '__main__':
     group.add_argument('-v', '--verbose', action='store_const', const='DEBUG', help='Turn on debug logging.')
 
     group = parser.add_argument_group('Other')
-    group.add_argument('--seed', help='Sets the random seed for the experiment, defaults to 1337.')
+    group.add_argument('--seed', help='Sets the random seed for the experiment. Defaults to 1337.')
     group.add_argument('--name', type=str, help='Sets a name for the experiment.')
     group.add_argument('--help', action='help', help='Show this help message and exit.')
 
