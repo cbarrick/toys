@@ -42,7 +42,7 @@ class EwcEstimator:
 
         Returns:
             Returns the fisher information of the trainable parameters.
-            The values are arranged similarly to `EWCTrainer.params()`.
+            The values are arranged similarly to `EwcEstimator.params()`.
         '''
         self.net.eval()
         self.opt.zero_grad()
@@ -62,7 +62,8 @@ class EwcEstimator:
         This method adds an L2-regularization term that constrains the
         parameters to their current value. The strength of this regularization
         is stronger for parameters which are more important for the current
-        task, as determined by their self Fisher information.
+        task, as determined by their Fisher information. The Fisher information
+        is estimated from a representative sample of the current task.
 
         Args:
             data:
