@@ -89,6 +89,7 @@ def main(**kwargs):
     # constructing the optimizer. This is annoying, and this logic is
     # duplicated in the estimator class. Ideally, I'd like the estimator to
     # handle cuda allocation _after_ the optimizer has been constructed...
+    net = AlexNet(2, shape=(3, 32, 32))
     if args.cuda is None:
         args.cuda = 0 if torch.cuda.is_available() else False
     if args.cuda is not False:
@@ -96,7 +97,6 @@ def main(**kwargs):
 
     for f in range(args.folds):
         print(f'================================ Fold {f} ================================')
-        net = AlexNet(2, shape=(3, 32, 32))
         opt = O.Adagrad(net.parameters(), lr=args.learning_rate)
         loss = N.CrossEntropyLoss()
         model = Classifier(net, opt, loss, name=args.name, cuda=args.cuda, dry_run=args.dry_run)
