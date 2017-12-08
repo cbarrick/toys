@@ -88,7 +88,7 @@ def main(**kwargs):
             train, validation, test = data.load(f)
 
             if task[0] == '+':
-                print(f'-------- Fitting {task} --------')
+                print(f'-------- Fitting {task[1:]} --------')
                 model.fit(train, validation,
                     epochs=args.epochs,
                     patience=args.patience,
@@ -97,7 +97,7 @@ def main(**kwargs):
                 print()
 
             if task[0] == '-':
-                print(f'-------- Scoring {task} --------')
+                print(f'-------- Scoring {task[1:]} --------')
                 scores = {
                     'precision': model.test(test, precision, batch_size=args.batch_size),
                     'recall': model.test(test, recall, batch_size=args.batch_size),
