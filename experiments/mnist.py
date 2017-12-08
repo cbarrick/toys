@@ -11,6 +11,7 @@ import torch.nn as N
 import torch.optim as O
 
 from datasets import MNIST
+from datasets import FashionMNIST
 from networks import AlexNet
 from estimators.ewc import EwcClassifier
 from metrics import precision, recall, f_score
@@ -55,6 +56,7 @@ def main(**kwargs):
 
     datasets = {
         'mnist': MNIST(),
+        'fashion': FashionMNIST(),
     }
 
     if args.name is None:
