@@ -91,17 +91,11 @@ class AlexNet(N.Module):
         self.reset()
 
     def reset(self):
-        # The initialization scheme is taken from Janowczyk and Madabhushi.
-        self.features[0].weight.data.normal_(std=0.001)
-        self.features[0].bias.data.zero_()
-        self.features[3].weight.data.normal_(std=0.01)
-        self.features[3].bias.data.zero_()
-        self.features[6].weight.data.normal_(std=0.01)
-        self.features[6].bias.data.zero_()
-        self.classifier[0].weight.data.normal_(std=0.1)
-        self.classifier[0].bias.data.zero_()
-        self.classifier[2].weight.data.normal_(std=0.1)
-        self.classifier[2].bias.data.zero_()
+        # Apply Kaiming initialization to conv and linear layers
+         for m in self.modules():
+            if isinstance(m, (N.Conv2d, N.Linear)):
+                N.init.kaiming_uniform(m.weight)
+                N.init.constant(m.bias, 0)
 
     def forward(self, x):
         x = self.features(x)
