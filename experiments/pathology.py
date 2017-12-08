@@ -79,7 +79,7 @@ def main(**kwargs):
 
     for f in range(args.folds):
         print(f'================================ Fold {f} ================================')
-        opt = O.Adagrad(net.parameters(), lr=args.learning_rate)
+        opt = O.Adagrad(net.parameters(), lr=args.learning_rate, weight_decay=0.004)
         loss = N.CrossEntropyLoss()
         model = EwcClassifier(net, opt, loss, name=args.name, cuda=args.cuda, dry_run=args.dry_run)
 
