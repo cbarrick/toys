@@ -52,6 +52,10 @@ def main(**kwargs):
         format='[{levelname:.4}][{asctime}][{name}:{lineno}] {msg}',
     )
 
+    logger.debug('parameters of this experiment')
+    for key, val in args.__dict__.items():
+        logger.debug(f' {key:.15}: {val}')
+
     seed(args.seed)
 
     datasets = {
