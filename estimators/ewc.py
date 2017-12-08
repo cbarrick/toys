@@ -50,10 +50,10 @@ class EwcEstimator:
         y = self.variable(y)
         h = self.net(x)
         l = F.log_softmax(h)[range(y.size(0)), y.data]  # log-likelihood of true class
-        l = l.mean()
+        l = l.sum()
         l.backward()
         grads = (p.grad.data.clone() for p in self.params())
-        fisher = [(g ** 2) for g in grads]
+        fisher = [(g ** 2) / len(x) for g in grads]
         return fisher
 
     def consolidate(self, data, alpha=1, **kwargs):
