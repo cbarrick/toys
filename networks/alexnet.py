@@ -96,8 +96,8 @@ class AlexNet(N.Module):
         self.features[6].bias.data.zero_()
         self.classifier[0].weight.data.normal_(std=0.1)
         self.classifier[0].bias.data.zero_()
-        self.classifier[2].weight.data.normal_(std=0.1)
-        self.classifier[2].bias.data.zero_()
+        self.classifier[1].weight.data.normal_(std=0.1)
+        self.classifier[1].bias.data.zero_()
 
     def forward(self, x):
         x = self.features(x)
