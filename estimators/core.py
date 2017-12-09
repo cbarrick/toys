@@ -135,7 +135,7 @@ class Estimator:
         self.opt.step()
         return j.data.mean()
 
-    def fit(self, train, validation=None, epochs=100, patience=50, **kwargs):
+    def fit(self, train, validation=None, epochs=100, patience=50, reports={}, **kwargs):
         '''Fit the model to a dataset.
 
         Args:
@@ -170,12 +170,17 @@ class Estimator:
                     break
             print('\001b[2K', end='\r', flush=True, file=sys.stderr)  # ANSI escape code to clear line
             print(f'epoch {epoch+1}', end=' ', flush=True)
-            print(f'[Train loss: {train_loss:8.6f}]', end=' ', flush=True)
+            print(f'[train loss: {train_loss:8.6f}]', end=' ', flush=True)
 
             # Validate
             if validation:
                 val_loss = self.test(validation, **kwargs)
-                print(f'[Validation loss: {val_loss:8.6f}]', end=' ', flush=True)
+                print(f'[validation loss: {val_loss:8.6f}]', end=' ', flush=True)
+
+            # Additional reports
+            for name, criteria in reports.items():
+                score = self.test(validation, criteria, **kwargs)
+                print(f'[{name}: {score:8.6f}]', end=' ', flush=True)
 
             # Early stopping
             loss = val_loss if validation else train_loss
