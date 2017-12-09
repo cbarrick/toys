@@ -192,12 +192,14 @@ class Estimator:
                 print('✓', end=' ', flush=True)
             else:
                 p -= 1
-
             print()
             if p == 0:
                 break
 
-        self.load()
+        # Revert to best model only if using early stopping.
+        if patience is not None:
+            self.load()
+
         return loss
 
     def predict(self, x):
