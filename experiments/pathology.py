@@ -120,34 +120,58 @@ def main(**kwargs):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        description='Run an experiment.',
         add_help=False,
         argument_default=argparse.SUPPRESS,
+        formatter_class=argparse.RawTextHelpFormatter,
+        description=(
+            'Runs an experiment.\n'
+            '\n'
+            'Tasks are specified with either a plus (+) or a minus (-) followed by the\n'
+            'name of a dataset. Tasks begining with a plus fit the model to the dataset,\n'
+            'while tasks begining with a minus test the model against a dataset.\n'
+            '\n'
+            'For example, the default task list of `+nuclei -nuclei` will first fit the\n'
+            'model to the nuclei dataset, then test against against the nuclei dataset.\n'
+            'EWC terms are computed after each fitting and are used for subsequent fits.\n'
+            '\n'
+            'Since tasks may begin with a minus (-) you need to separate the task list\n'
+            'from the other arguments by using a double-dash (--). For example:\n'
+            '\n'
+            '    python -m experiments.pathology --cuda=0 -- +nuclei -nuclei\n'
+            '\n'
+            'Note that the experiment is intended to be executed from the root of the\n'
+            'repository using `python -m`.'
+        ),
+        epilog=(
+            'Datasets:\n'
+            '  nuclei   A nuclei segmentation dataset\n'
+            '  epi      An epithelium segmentation dataset\n'
+        ),
     )
 
-    group = parser.add_argument_group('Required')
-    group.add_argument('tasks', metavar='TASK', nargs='+', help='The tasks for this experiment.')
-
     group = parser.add_argument_group('Hyper-parameters')
-    group.add_argument('-n', '--data-size', metavar='N', type=int, help='The number of training samples is a function of N.')
-    group.add_argument('-k', '--folds', metavar='N', type=int, help='The number of cross-validation folds.')
-    group.add_argument('-e', '--epochs', metavar='N', type=int, help='The maximum number of epochs per task.')
-    group.add_argument('-l', '--learning-rate', metavar='N', type=float, help='The learning rate.')
-    group.add_argument('-p', '--patience', metavar='N', type=int, help='Higher patience may help avoid local minima.')
-    group.add_argument('-w', '--ewc', metavar='N', type=float, help='The regularization strength of ewc. Defaults to 0.')
+    group.add_argument('-n', '--data-size', metavar='X', type=int)
+    group.add_argument('-k', '--folds', metavar='X', type=int)
+    group.add_argument('-e', '--epochs', metavar='X', type=int)
+    group.add_argument('-l', '--learning-rate', metavar='X', type=float)
+    group.add_argument('-p', '--patience', metavar='X', type=int)
+    group.add_argument('-w', '--ewc', metavar='X', type=float)
 
     group = parser.add_argument_group('Performance')
-    group.add_argument('-b', '--batch-size', metavar='N', type=int, help='The batch size.')
-    group.add_argument('-c', '--cuda', metavar='N', type=int, help='Use the Nth cuda device.')
+    group.add_argument('-b', '--batch-size', metavar='X', type=int)
+    group.add_argument('-c', '--cuda', metavar='X', type=int)
 
     group = parser.add_argument_group('Debugging')
-    group.add_argument('-d', '--dry-run', action='store_true', help='Do a dry run to check for errors.')
-    group.add_argument('-v', '--verbose', action='store_const', const='DEBUG', help='Turn on debug logging.')
+    group.add_argument('-d', '--dry-run', action='store_true')
+    group.add_argument('-v', '--verbose', action='store_const', const='DEBUG')
 
     group = parser.add_argument_group('Other')
-    group.add_argument('--seed', help='Sets the random seed for the experiment. Defaults to 1337.')
-    group.add_argument('--name', type=str, help='Sets a name for the experiment.')
-    group.add_argument('--help', action='help', help='Show this help message and exit.')
+    group.add_argument('--seed')
+    group.add_argument('--name', type=str)
+    group.add_argument('--help', action='help')
+
+    group = parser.add_argument_group('Positional')
+    group.add_argument('tasks', metavar='TASK', nargs='*')
 
     args = parser.parse_args()
     main(**vars(args))
