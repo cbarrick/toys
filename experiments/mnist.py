@@ -66,7 +66,7 @@ def main(**kwargs):
 
     if args.name is None:
         now = np.datetime64('now')
-        args.name = f'{args.tasks}-{now}'
+        args.name = f'exp-{now}'
         logger.info(f'experiment name not given, defaulting to {args.name}')
 
     # In some cases, we must move the network to it's cuda device before

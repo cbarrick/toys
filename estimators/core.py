@@ -179,7 +179,8 @@ class Estimator:
 
             # Additional reports
             for name, criteria in reports.items():
-                score = self.test(validation, criteria, **kwargs)
+                data = validation if validation is not None else train
+                score = self.test(data, criteria, **kwargs)
                 print(f'[{name}: {score:8.6f}]', end=' ', flush=True)
 
             # Early stopping
