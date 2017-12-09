@@ -7,6 +7,8 @@ import torch.autograd as A
 import torch.nn.functional as F
 import torch.utils.data as D
 
+from metrics import Mean
+
 
 logger = logging.getLogger(__name__)
 
@@ -225,7 +227,13 @@ class Estimator:
             y = self.variable(y, volatile=True)
             h = self.net(x)
             j = self.loss(h, y)
-            return j.data.mean()
+            return j.data
+
+        if not callable(criteria):
+            # Accumulator - metrics that can't be simply averaged, like f-score
+            h = self.predict(x)
+            y = self.tensor(y)
+            return criteria.accumulate(y, h)
 
         try:
             # Fast path - try to use the GPU
@@ -253,16 +261,22 @@ class Estimator:
             The last incomplete batch is dropped by default.
         '''
         kwargs.setdefault('pin_memory', self.cuda is not False)
-        kwargs['drop_last'] = True
         data = D.DataLoader(data, **kwargs)
-        n = len(data)
-        loss = 0
-        for x, y in data:
-            j = self.score(x, y, criteria)
-            loss += j / n
-            if self.dry_run:
-                break
-        return loss
+
+        if criteria is None or callable(criteria):
+            # average criteria across batches
+            mean = Mean()
+            for x, y in data:
+                j = self.score(x, y, criteria)
+                mean.accumulate(j)
+            return mean.reduce()
+
+        else:
+            # criteria is an accumulator
+            # e.g. a metric that can't be simply averaged, like f-score
+            for x, y in data:
+                self.score(x, y, criteria)
+            return criteria.reduce()
 
 
 class Classifier(Estimator):

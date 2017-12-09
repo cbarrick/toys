@@ -15,8 +15,8 @@ from datasets.pathology import EpitheliumSegmentation
 from datasets.pathology import TubuleSegmentation
 from networks import AlexNet
 from estimators.ewc import EwcClassifier
-from metrics import true_positives, false_positives, true_negatives, false_negatives
-from metrics import accuracy, precision, recall, f_score
+from metrics import TruePositives, FalsePositives, TrueNegatives, FalseNegatives
+from metrics import Accuracy, Precision, Recall, FScore
 
 
 logger = logging.getLogger()
@@ -101,17 +101,18 @@ def main(**kwargs):
             if task[0] == '-':
                 print(f'-------- Scoring {task[1:]} --------')
                 scores = {
-                    'accuracy': model.test(test, accuracy, batch_size=args.batch_size),
-                    'true_positives': model.test(test, true_positives, batch_size=args.batch_size),
-                    'false_positives': model.test(test, false_positives, batch_size=args.batch_size),
-                    'true_negatives': model.test(test, true_negatives, batch_size=args.batch_size),
-                    'false_negatives': model.test(test, false_negatives, batch_size=args.batch_size),
-                    'precision': model.test(test, precision, batch_size=args.batch_size),
-                    'recall': model.test(test, recall, batch_size=args.batch_size),
-                    'f-score': model.test(test, f_score, batch_size=args.batch_size),
+                    'accuracy': Accuracy(),
+                    'true positives': TruePositives(),
+                    'false positives': FalsePositives(),
+                    'true negatives': TrueNegatives(),
+                    'false negatives': FalseNegatives(),
+                    'precision': Precision(),
+                    'recall': Recall(),
+                    'f-score': FScore(),
                 }
-                for metric in scores:
-                    print(f'{metric:.10}: {scores[metric]}')
+                for metric, criteria in scores.items():
+                    score = model.test(test, criteria, batch_size=args.batch_size)
+                    print(f'{metric:15}: {score}')
                 print()
 
             if args.dry_run:
