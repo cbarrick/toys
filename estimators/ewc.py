@@ -89,11 +89,11 @@ class EwcEstimator:
             if self.dry_run:
                 break
 
-        self.ewc = {
+        self.ewc += [{
             'params': params,
             'fisher': fisher,
             'alpha': alpha,  # The name 'lambda' is taken by the keyword.
-        }
+        }]
 
     def loss(self, *args, **kwargs):
         '''Compute the loss with EWC regularization.
