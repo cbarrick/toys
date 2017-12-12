@@ -1,2 +1,1 @@
-from .core import Estimator
-from .core import Classifier
+from .core import *
