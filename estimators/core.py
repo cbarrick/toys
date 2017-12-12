@@ -24,9 +24,9 @@ class Estimator:
             net: The network to train.
             opt: The optimizer to step during training.
             loss: The loss function to minimize.
-            name: A name for the model.
+            name: A name for the estimator.
             cuda: The cuda device to use.
-            dry_run: Cut loops short.
+            dry_run: Cut loops short, useful for debugging.
         '''
         if cuda is None:
             cuda = 0 if torch.cuda.is_available() else False
@@ -47,47 +47,92 @@ class Estimator:
 
     @property
     def net(self):
+        '''The network used by the estimator.
+
+        For the base Estimator class, this is the network
+        passed to the constructor.
+        '''
         return self._net
 
     @property
     def opt(self):
+        '''The optimizer used by the estimator.
+
+        For the base Estimator class, this is the optimizer
+        passed to the constructor.
+        '''
         return self._opt
 
     def loss(self, *args, **kwargs):
+        '''Calls the loss function of the estimator.
+
+        For the base Estimator class, this simply wraps the loss function
+        passed to the constructor.
+        '''
         return self._loss(*args, **kwargs)
 
     def reset(self):
         '''Reset the estimator to it's initial state.
+
+        TODO: This does NOT reset the optimizer.
+        I am still deciding the best way to do that.
+
+        Returns:
+            Returns `self` to allow method chaining.
         '''
         self.net.reset()
         return self
 
     def save(self, path=None):
         '''Saves the model parameters to disk.
+
+        The default path is based on the name of the estimator,
+        and can be overridden by manipulating `esimator.path`.
+
+        Args:
+            path: The path to write into.
+
+        Returns:
+            Returns `self` to allow method chaining.
         '''
-        if path is None:
-            path = self.path
+        if path is None: path = self.path
+        logger.debug(f'saving {self.name} to {path}')
         state = self.net.state_dict()
         torch.save(state, str(path))
         return self
 
     def load(self, path=None):
         '''Loads the model parameters from disk.
+
+        The default path is based on the name of the estimator,
+        and can be overridden by manipulating `esimator.path`.
+
+        Args:
+            path: The path to write into.
+
+        Returns:
+            Returns `self` to allow method chaining.
         '''
-        if path is None:
-            path = self.path
+        if path is None: path = self.path
+        logger.debug(f'restoring {self.name} from {path}')
         state = torch.load(str(path))
         self.net.load_state_dict(state)
         return self
 
     def variable(self, x, **kwargs):
-        '''Cast a tensor to a `Variable` on the same cuda device as the network.
+        '''Cast a tensor to a `Variable` on the same device as the network.
 
-        If the input is already a `Variable`, it is not wrapped.
+        If the input is already a `Variable`, it is not wrapped,
+        but it may be copied to a new device.
 
         Args:
             x: The tensor to wrap.
-            **kwargs: Passed to the `Variable` constructor.
+
+        Kwargs:
+            Forwarded to the `autograd.Variable` constructor.
+
+        Returns:
+            An `autograd.Variable` on the same device as the network.
         '''
         if not isinstance(x, A.Variable):
             x = A.Variable(x, **kwargs)
@@ -96,15 +141,29 @@ class Estimator:
         return x
 
     def tensor(self, x):
-        '''Cast some `x` to a torch `Tensor` on the same cuda device as the network.
+        '''Cast some `x` to a `Tensor` on the same device as the network.
+
+        If `x` is an `autograd.Variable`, then a clone of its data tensor is
+        returned. Otherwise `x` is passed to the `torch.Tensor` constructor.
 
         Args:
-            x: The input to cast
+            x: The input to cast.
+
+        Returns:
+            A `torch.Tensor` on the same device as the network.
         '''
         if isinstance(x, A.Variable):
-            x = x.detach().data
+            x = x.data.clone()
+        elif hasattr(x, 'cuda'):
+            # x is already a Tensor if it has a cuda method (probably).
+            # There is no common base class for Tensors as of PyTorch 0.2.
+            pass
+        else:
+            x = torch.Tensor(x)
+
         if self.cuda is not False:
             x = x.cuda(self.cuda, async=True)
+
         return x
 
     def params(self):
@@ -125,8 +184,8 @@ class Estimator:
         Returns:
             Returns the average loss for this batch.
         '''
-        self.net.train()  # put the net in train mode, effects dropout layers etc.
-        self.opt.zero_grad()  # reset the gradients of the trainable variables.
+        self.net.train()
+        self.opt.zero_grad()
         x = self.variable(x)
         y = self.variable(y)
         h = self.net(x)
@@ -135,15 +194,22 @@ class Estimator:
         self.opt.step()
         return j.data.mean()
 
-    def fit(self, train, validation=None, epochs=100, patience=50, reports={}, **kwargs):
+    def fit(self, train, validation=None, epochs=100, patience=None, reports={}, **kwargs):
         '''Fit the model to a dataset.
+
+        If a validation set is given, all reports and early stopping use it.
 
         Args:
             train: A dataset to fit.
             validation: A dataset to use as the validation set.
             epochs: The maximum number of epochs to spend training.
-            patience: Stop if the validation loss does not improve after this many epochs.
-            **kwargs: Forwarded to torch's `DataLoader` class, with more sensible defaults.
+            patience: Stop if the loss does not improve after this many epochs.
+            reports: A dict of metrics to report at each epoch.
+
+        Kwargs:
+            Forwarded to torch's `DataLoader` class, except:
+            shuffle: Defaults to True.
+            pin_memory: Defaults to True if the estimator is using cuda.
 
         Returns:
             Returns the validation loss.
@@ -157,7 +223,7 @@ class Estimator:
         p = patience or -1
         for epoch in range(epochs):
 
-            # Train
+            # Training
             n = len(train)
             train_loss = Mean()
             print(f'epoch {epoch+1} [0%]', end='\r', flush=True, file=sys.stderr)
@@ -168,18 +234,18 @@ class Estimator:
                 print(f'epoch {epoch+1} [{progress:.2%}]', end='\r', flush=True, file=sys.stderr)
                 if self.dry_run: break
             train_loss = train_loss.reduce()
-            print('\001b[2K', end='\r', flush=True, file=sys.stderr)  # ANSI escape code to clear line
+            print('\001b[2K', end='\r', flush=True, file=sys.stderr)  # magic to clear the line
             print(f'epoch {epoch+1}', end=' ', flush=True)
             print(f'[train loss: {train_loss:8.6f}]', end=' ', flush=True)
 
-            # Validate
+            # Validation
             if validation:
                 val_loss = self.test(validation, **kwargs)
                 print(f'[validation loss: {val_loss:8.6f}]', end=' ', flush=True)
 
-            # Additional reports
+            # Reporting
             for name, criteria in reports.items():
-                data = validation if validation is not None else train
+                data = validation if validation else train
                 score = self.test(data, criteria, **kwargs)
                 print(f'[{name}: {score:8.6f}]', end=' ', flush=True)
 
@@ -189,15 +255,15 @@ class Estimator:
                 best_loss = loss
                 p = patience or -1
                 self.save()
-                print('✓', end=' ', flush=True)
+                print('✓')
             else:
                 p -= 1
-            print()
+                print()
             if p == 0:
                 break
 
-        # Revert to best model only if using early stopping.
-        if patience is not None:
+        # Revert to best model if using early stopping.
+        if patience:
             self.load()
 
         return loss
@@ -211,8 +277,8 @@ class Estimator:
         Returns:
             Returns the output of the network.
         '''
-        self.net.eval()  # put the net in eval mode, effects dropout layers etc.
-        x = self.variable(x, volatile=True)  # use volatile input to save memory when not training.
+        self.net.eval()
+        x = self.variable(x, volatile=True)
         h = self.net(x)
         return h.data
 
@@ -222,10 +288,12 @@ class Estimator:
         Args:
             x: The input batch.
             y: The targets.
-            criteria: The metric to measure; defaults to the mean loss.
+            criteria: The metric to measure.
 
         Returns:
-            Returns the result of `criteria(true, predicted)`.
+            If criteria is None, returns the loss.
+            If criteria is a function, returns `criteria(y, h)`.
+            If criteria is an accumulator, returns `criteria.accumulate(y, h)`.
         '''
         self.net.eval()
 
@@ -244,14 +312,14 @@ class Estimator:
             return criteria.accumulate(y, h)
 
         try:
-            # Fast path - try to use the GPU
+            # Function, fast path - try to use the GPU
             h = self.predict(x)
             y = self.tensor(y)
             return criteria(y, h)
 
         except (ValueError, TypeError):
-            # Slow path - most sklearn metrics cannot handle Tensors
-            logger.debug('computing a slow metric')
+            # Function, slow path - most sklearn metrics cannot handle Tensors
+            logger.debug('computing a metric on the CPU')
             h = h.cpu().numpy()
             y = y.cpu().numpy()
             return criteria(y, h)
@@ -262,11 +330,15 @@ class Estimator:
         Args:
             data: A dataset to score against.
             criteria: The metric to measure; defaults to the loss.
-            **kwargs: Forwarded to torch's `DataLoader` class, with more sensible defaults.
+
+        Kwargs:
+            Forwarded to torch's `DataLoader` class, except:
+            shuffle: Defaults to True.
 
         Returns:
-            Returns the result of `criteria(true, predicted)` averaged over all batches.
-            The last incomplete batch is dropped by default.
+            If criteria is None, returns the mean loss over all batches.
+            If criteria is a function, returns the mean `criteria(y, h)` over all batches.
+            If criteria is an accumulator, returns the accumulated metric over all batches.
         '''
         kwargs.setdefault('pin_memory', self.cuda is not False)
         data = D.DataLoader(data, **kwargs)
@@ -290,6 +362,9 @@ class Estimator:
 
 
 class Classifier(Estimator):
+    '''Wraps a torch network, optimizer, and loss to an sklearn-like classifier.
+    '''
+
     def predict(self, x):
         '''Classify some input batch.
 
@@ -297,7 +372,7 @@ class Classifier(Estimator):
             x: The input batch.
 
         Returns:
-            Returns the class numbers of each batch item.
+            The argmax of the network output.
         '''
         self.net.eval()
         x = self.variable(x, volatile=True)
@@ -312,7 +387,7 @@ class Classifier(Estimator):
             x: The input batch.
 
         Returns:
-            The softmax of the network's output.
+            The softmax of the network output.
         '''
         self.net.eval()
         x = self.variable(x, volatile=True)
