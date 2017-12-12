@@ -1,56 +1,11 @@
-EPSILON = 1e-7
+import sys
+
+from metrics.core import Sum, Mean
 
 
-class Sum:
-    def __init__(self, **kwargs):
-        self.kwargs = kwargs
-        self.val = 0
-
-    def accumulate(self, batch):
-        try:
-            self.val += batch.sum(**self.kwargs)
-        except (TypeError, AttributeError):
-            self.val += batch
-
-    def reduce(self):
-        val = self.val
-        self.val = 0
-        return val
-
-
-class Mean:
-    def __init__(self, **kwargs):
-        self.kwargs = kwargs
-        self.n = 0
-        self.val = 0
-
-    def accumulate(self, batch):
-        try:
-            n = len(batch)
-            try:
-                val = batch.mean(**self.kwargs)
-            except (TypeError, AttributeError):
-                # careful, ByteTensor will likely overflow
-                # this is common with `==` comparisons
-                val = batch.sum(**self.kwargs) / n
-        except (TypeError, AttributeError):
-            n = 1
-            val = batch
-
-        if self.n == 0:
-            self.n = n
-            self.val = val
-
-        else:
-            delta = val - self.val
-            self.n += n
-            self.val += delta * n / self.n
-
-    def reduce(self):
-        val = self.val
-        self.n = 0
-        self.val = 0
-        return val
+# Use epsilon only to prevent ZeroDivisionError.
+# Rounding error may exceed epsilon.
+EPSILON = sys.float_info.epsilon
 
 
 class Accuracy:

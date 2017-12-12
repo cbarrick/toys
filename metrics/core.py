@@ -1,3 +1,4 @@
+
 class Sum:
     def __init__(self, **kwargs):
         self.kwargs = kwargs
@@ -22,15 +23,13 @@ class Mean:
         self.val = 0
 
     def accumulate(self, batch):
-        try:
+        if hasattr(batch, 'mean'):
             n = len(batch)
-            try:
-                val = batch.mean(**self.kwargs)
-            except (TypeError, AttributeError):
-                # careful, ByteTensor will likely overflow
-                # this is common with `==` comparisons
-                val = batch.sum(**self.kwargs) / n
-        except (TypeError, AttributeError):
+            val = batch.mean(**self.kwargs)
+        elif hasattr(batch, 'double'):
+            n = len(batch)
+            val = batch.double().mean(**self.kwargs)
+        else:
             n = 1
             val = batch
 
