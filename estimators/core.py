@@ -159,15 +159,15 @@ class Estimator:
 
             # Train
             n = len(train)
-            train_loss = 0
+            train_loss = Mean()
             print(f'epoch {epoch+1} [0%]', end='\r', flush=True, file=sys.stderr)
             for i, (x, y) in enumerate(train):
                 j = self.partial_fit(x, y)
-                train_loss += j / n
+                train_loss.accumulate(j)
                 progress = (i+1) / n
                 print(f'epoch {epoch+1} [{progress:.2%}]', end='\r', flush=True, file=sys.stderr)
-                if self.dry_run:
-                    break
+                if self.dry_run: break
+            train_loss = train_loss.reduce()
             print('\001b[2K', end='\r', flush=True, file=sys.stderr)  # ANSI escape code to clear line
             print(f'epoch {epoch+1}', end=' ', flush=True)
             print(f'[train loss: {train_loss:8.6f}]', end=' ', flush=True)
@@ -277,6 +277,7 @@ class Estimator:
             for x, y in data:
                 j = self.score(x, y, criteria)
                 mean.accumulate(j)
+                if self.dry_run: break
             return mean.reduce()
 
         else:
@@ -284,6 +285,7 @@ class Estimator:
             # e.g. a metric that can't be simply averaged, like f-score
             for x, y in data:
                 self.score(x, y, criteria)
+                if self.dry_run: break
             return criteria.reduce()
 
 
