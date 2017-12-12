@@ -29,8 +29,9 @@ def seed(n):
     import torch
     random.seed(n)
     np.random.seed(n)
-    torch.manual_seed(n)
-    torch.cuda.manual_seed_all(n)
+    if torch.cuda.is_available():
+        torch.manual_seed(n)
+        torch.cuda.manual_seed_all(n)
 
 
 def main(**kwargs):
@@ -46,7 +47,7 @@ def main(**kwargs):
     kwargs.setdefault('name', None)
     kwargs.setdefault('seed', 1337)
     kwargs.setdefault('verbose', 'WARN')
-    kwargs.setdefault('task', ['+nuclei', '-nuclei'])
+    kwargs.setdefault('tasks', ['+nuclei', '-nuclei'])
     args = SimpleNamespace(**kwargs)
 
     logging.basicConfig(
