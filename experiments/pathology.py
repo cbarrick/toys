@@ -40,7 +40,7 @@ def main(**kwargs):
     kwargs.setdefault('epochs', 600)
     kwargs.setdefault('learning_rate', 0.001)
     kwargs.setdefault('patience', None)
-    kwargs.setdefault('batch_size', 128)
+    kwargs.setdefault('batch_size', 48)
     kwargs.setdefault('dry_run', False)
     kwargs.setdefault('name', None)
     kwargs.setdefault('seed', 1337)
