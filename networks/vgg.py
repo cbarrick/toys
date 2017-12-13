@@ -50,10 +50,11 @@ class _VggBase(N.Module):
         self.reset()
 
     def reset(self):
-         for m in self.modules():
+        for m in self.modules():
             if isinstance(m, (N.Conv2d, N.Linear)):
                 N.init.kaiming_uniform(m.weight)
                 N.init.constant(m.bias, 0)
+        return self
 
     def forward(self, x):
         x = self.cnn(x)
