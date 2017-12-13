@@ -113,6 +113,9 @@ def main(**kwargs):
                 print(f'{metric:15}: {score}')
             print()
 
+            # move net back to the cpu before starting the next task
+            net.cpu()
+
         if args.dry_run:
             break
 
