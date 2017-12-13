@@ -28,8 +28,8 @@ def seed(n):
     import torch
     random.seed(n)
     np.random.seed(n)
+    torch.manual_seed(n)
     if torch.cuda.is_available():
-        torch.manual_seed(n)
         torch.cuda.manual_seed_all(n)
 
 
