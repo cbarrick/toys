@@ -67,9 +67,9 @@ def main(**kwargs):
     }
 
     datasets = {
-        'nuclei': NucleiSegmentation(n=args.data_size, k=args.folds, size=256),
-        'epi': EpitheliumSegmentation(n=args.data_size, k=args.folds, size=256),
-        'tubule': TubuleSegmentation(n=args.data_size, k=args.folds, size=256),
+        'nuclei': NucleiSegmentation(n=args.data_size, k=args.folds, size=256, bg_ratio=0.1),
+        'epi': EpitheliumSegmentation(n=args.data_size, k=args.folds, size=256, bg_ratio=0.1),
+        'tubule': TubuleSegmentation(n=args.data_size, k=args.folds, size=256, bg_ratio=0.1),
     }
 
     if args.name is None:
