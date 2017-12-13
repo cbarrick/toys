@@ -7,14 +7,15 @@ import torch.autograd as A
 import torch.nn.functional as F
 import torch.utils.data as D
 
-from estimators import Estimator, Classifier
+from estimators import Classifier
+from metrics import Mean
 
 
 logger = logging.getLogger(__name__)
 
 
-class EwcEstimator:
-    '''An estimator that learns multiple tasks through elastic weight consolidation.
+class EwcClassifier(Classifier):
+    '''An classifier that learns multiple tasks through elastic weight consolidation.
 
     Elastic weight consolidation (EWC) is a method for training a single model
     to perform multiple tasks. The idea is that we first train the model to
@@ -42,8 +43,18 @@ class EwcEstimator:
 
         Returns:
             Returns the fisher information of the trainable parameters.
-            The values are arranged similarly to `EwcEstimator.params()`.
+            The values are arranged similarly to `EwcClassifier.params()`.
         '''
+        # Fisher information is the variance of the gradient of the log-likelihood,
+        # i.e. E[(𝛻 log f(X;𝜃)) ** 2 | 𝜃]
+        # This is a relativly straightforward implementation of that formula
+        # for classification. Note that we must backprop with a scalar, so we
+        # commute the summation part of the expectation across the derivative.
+        # BUT using a sum makes this numerically unstable. I have 2 questions:
+        # 1. How can we make this more stable? Can we commute the entire mean
+        #    across the derivative? I think not...
+        # 2. How do we generalize this to continuous regression problems?
+        #    i.e. How should we interpret log-likelihood in that case?
         self.net.eval()
         self.opt.zero_grad()
         x = self.variable(x)
@@ -66,28 +77,24 @@ class EwcEstimator:
         is estimated from a representative sample of the current task.
 
         Args:
-            data:
-                A dataset of samples from the current task.
-                This is typically the validation set.
-            alpha:
-                A global regularization strength for the new term.
-            **kwargs:
-                Forwarded to torch's `DataLoader` class, with more sensible defaults.
+            data: Samples of the current task, typically the validation set.
+            alpha: A global regularization strength for the new term.
+
+        Kwargs:
+            Forwarded to torch's `DataLoader` class, except:
+            pin_memory: Defaults to True if the estimator is using cuda.
         '''
         kwargs.setdefault('pin_memory', self.cuda is not False)
-        kwargs['drop_last'] = True
         data = D.DataLoader(data, **kwargs)
 
         params = [p.clone() for p in self.params()]
-        fisher = [torch.zeros(p.size()) for p in self.params()]
-        fisher = [self.variable(f) for f in fisher]
+        fisher = [Mean() for p in self.params()]
 
-        n = len(data)
         for x, y in data:
             for i, f in enumerate(self.fisher_information(x, y)):
-                fisher[i] += self.variable(f) / n
-            if self.dry_run:
-                break
+                fisher[i].accumulate(f)
+            if self.dry_run: break
+        fisher = [f.reduce() for f in fisher]
 
         self.ewc += [{
             'params': params,
@@ -115,15 +122,3 @@ class EwcEstimator:
             j += sum(ewc)
 
         return j
-
-
-class EwcClassifier(EwcEstimator, Classifier):
-    '''A classifier that learns multiple tasks through elastic weight consolidation.
-
-    See:
-        EwcEstimator contains an explanation of EWC.
-
-    References:
-        "Overcoming catastrophic forgetting in neural networks" https://arxiv.org/abs/1612.00796
-    '''
-    pass
