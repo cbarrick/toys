@@ -5,6 +5,8 @@ import numpy as np
 import torch
 import torch.nn as N
 
+from networks import MLP
+
 
 logger = logging.getLogger(__name__)
 
@@ -25,28 +27,13 @@ class VggBlock2d(N.Module):
         return self.layers(x)
 
 
-class VggFrontend(N.Module):
-    def __init__(self, *chans):
-        super().__init__()
-        layers = []
-        n = len(chans)
-        for i in range(n-1):
-            full = N.Linear(chans[i], chans[i+1])
-            relu = N.ReLU(inplace=True)
-            layers += [full, relu]
-        self.layers = N.Sequential(*layers)
-
-    def forward(self, x):
-        return self.layers(x)
-
-
 class _VggBase(N.Module):
     def __init__(self, cnn, shape, ndim):
         super().__init__()
         n = int(np.ceil(shape[1] / 2 ** len(cnn)))
         m = int(np.ceil(shape[2] / 2 ** len(cnn)))
         self.cnn = cnn
-        self.frontend = VggFrontend(512*n*m, 4096, 4096, ndim)
+        self.frontend = MLP(512*n*m, 4096, 4096, ndim)
         self.reset()
 
     def reset(self):
