@@ -225,6 +225,7 @@ class Estimator:
             Forwarded to torch's `DataLoader` class, except:
             shuffle: Defaults to True.
             pin_memory: Defaults to True if the estimator is using cuda.
+            num_workers: Defaults to 4.
 
         Returns:
             Returns the validation loss.
@@ -232,6 +233,7 @@ class Estimator:
         '''
         kwargs.setdefault('shuffle', True)
         kwargs.setdefault('pin_memory', self.cuda)
+        kwargs.setdefault('num_workers', 4)
         train = D.DataLoader(train, **kwargs)
 
         best_loss = float('inf')
@@ -348,7 +350,8 @@ class Estimator:
 
         Kwargs:
             Forwarded to torch's `DataLoader` class, except:
-            shuffle: Defaults to True.
+            pin_memory: Defaults to True if the estimator is using cuda.
+            num_workers: Defaults to 4.
 
         Returns:
             If criteria is None, returns the mean loss over all batches.
@@ -356,6 +359,7 @@ class Estimator:
             If criteria is an accumulator, returns the accumulated metric over all batches.
         '''
         kwargs.setdefault('pin_memory', self.cuda)
+        kwargs.setdefault('num_workers', 4)
         data = D.DataLoader(data, **kwargs)
 
         if criteria is None or callable(criteria):
