@@ -41,7 +41,6 @@ def main(**kwargs):
     kwargs.setdefault('learning_rate', 0.001)
     kwargs.setdefault('patience', None)
     kwargs.setdefault('batch_size', 128)
-    kwargs.setdefault('cuda', None)
     kwargs.setdefault('dry_run', False)
     kwargs.setdefault('name', None)
     kwargs.setdefault('seed', 1337)
@@ -84,10 +83,10 @@ def main(**kwargs):
         for task in args.tasks:
             net, data = task.split(':')
 
-            net = networks[net]
+            net = networks[net].reset()
             opt = O.Adam(net.parameters())
             loss = N.CrossEntropyLoss()
-            model = Classifier(net, opt, loss, name=args.name, cuda=args.cuda, dry_run=args.dry_run)
+            model = Classifier(net, opt, loss, name=args.name, dry_run=args.dry_run)
 
             data = datasets[data]
             train, validation, test = data.load(f)
@@ -134,7 +133,7 @@ if __name__ == '__main__':
             'Note that the experiment is intended to be executed from the root of the\n'
             'repository using `python -m`:\n'
             '\n'
-            '  python -m experiments.pathology --cuda=0 alex:nuclei\n'
+            '  python -m experiments.pathology alex:nuclei\n'
             '\n'
             'Networks:\n'
             '  alex     A reduced AlexNet, designed for CIFAR-10\n'
@@ -156,7 +155,6 @@ if __name__ == '__main__':
 
     group = parser.add_argument_group('Performance')
     group.add_argument('-b', '--batch-size', metavar='X', type=int)
-    group.add_argument('-c', '--cuda', metavar='X', type=int)
 
     group = parser.add_argument_group('Debugging')
     group.add_argument('-d', '--dry-run', action='store_true')

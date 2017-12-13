@@ -4,13 +4,29 @@ from pathlib import Path
 
 import torch
 import torch.autograd as A
+import torch.nn as N
 import torch.nn.functional as F
+import torch.nn.parallel as P
 import torch.utils.data as D
 
 from metrics import Mean
 
 
 logger = logging.getLogger(__name__)
+
+
+class _DataParallel(N.Module):
+    def __init__(self, module, *args, **kwargs):
+        super().__init__()
+        self.module = module
+        self.parallel = P.DataParallel(module, *args, **kwargs)
+
+    def forward(self, *args, **kwargs):
+        return self.parallel(*args, **kwargs)
+
+    def reset(self):
+        self.module.reset()
+        return self
 
 
 class Estimator:
@@ -25,19 +41,14 @@ class Estimator:
             opt: The optimizer to step during training.
             loss: The loss function to minimize.
             name: A name for the estimator.
-            cuda: The cuda device to use.
+            cuda: List of cuda device ids, defaults to all devices.
             dry_run: Cut loops short, useful for debugging.
         '''
-        if cuda is None:
-            cuda = 0 if torch.cuda.is_available() else False
-        if cuda is not False:
-            net = net.cuda(cuda)
-
-        self._net = net
+        self.cuda = cuda or list(range(torch.cuda.device_count()))
+        self._net = self.setup_network(net)
         self._opt = opt
         self._loss = loss
         self.name = name
-        self.cuda = cuda
         self.dry_run = dry_run
         self.reset()
 
@@ -45,31 +56,37 @@ class Estimator:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.path.touch()
 
+        logger.debug(f'created estimator {self.name}')
+        logger.debug(f' cuda: {self.cuda}')
+        logger.debug(f' network: {self._net.__class__}')
+        logger.debug(f' optimizer: {self._opt.__class__}')
+        logger.debug(f' loss: {self._loss.__class__}')
+        logger.debug(f' dry_run: {self.dry_run}')
+
     @property
     def net(self):
         '''The network used by the estimator.
-
-        For the base Estimator class, this is the network
-        passed to the constructor.
         '''
         return self._net
 
     @property
     def opt(self):
         '''The optimizer used by the estimator.
-
-        For the base Estimator class, this is the optimizer
-        passed to the constructor.
         '''
         return self._opt
 
-    def loss(self, *args, **kwargs):
-        '''Calls the loss function of the estimator.
-
-        For the base Estimator class, this simply wraps the loss function
-        passed to the constructor.
+    @property
+    def loss(self):
+        '''The loss function used by the estimator.
         '''
-        return self._loss(*args, **kwargs)
+        return self._loss
+
+    def setup_network(self, net):
+        if self.cuda:
+            net = net.cuda()
+            return _DataParallel(net, device_ids=self.cuda)
+        else:
+            return net
 
     def reset(self):
         '''Reset the estimator to it's initial state.
@@ -136,8 +153,8 @@ class Estimator:
         '''
         if not isinstance(x, A.Variable):
             x = A.Variable(x, **kwargs)
-        if self.cuda is not False:
-            x = x.cuda(self.cuda, async=True)
+        if self.cuda:
+            x = x.cuda(async=True)
         return x
 
     def tensor(self, x):
@@ -160,10 +177,8 @@ class Estimator:
             pass
         else:
             x = torch.Tensor(x)
-
-        if self.cuda is not False:
-            x = x.cuda(self.cuda, async=True)
-
+        if self.cuda:
+            x = x.cuda(async=True)
         return x
 
     def params(self):
@@ -216,7 +231,7 @@ class Estimator:
             Returns train loss if no validation set is given.
         '''
         kwargs.setdefault('shuffle', True)
-        kwargs.setdefault('pin_memory', self.cuda is not False)
+        kwargs.setdefault('pin_memory', self.cuda)
         train = D.DataLoader(train, **kwargs)
 
         best_loss = float('inf')
@@ -340,7 +355,7 @@ class Estimator:
             If criteria is a function, returns the mean `criteria(y, h)` over all batches.
             If criteria is an accumulator, returns the accumulated metric over all batches.
         '''
-        kwargs.setdefault('pin_memory', self.cuda is not False)
+        kwargs.setdefault('pin_memory', self.cuda)
         data = D.DataLoader(data, **kwargs)
 
         if criteria is None or callable(criteria):
