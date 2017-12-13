@@ -40,18 +40,13 @@ class VggFrontend(N.Module):
         return self.layers(x)
 
 
-class VggSimple(N.Module):
-    def __init__(self, num_classes=10, shape=(1, 27, 27)):
+class _VggBase(N.Module):
+    def __init__(self, cnn, shape, ndim):
         super().__init__()
-
-        self.cnn = N.Sequential(
-            VggBlock2d(shape[0], 32),
-        )
-
-        n = int(np.ceil(shape[1] / 2))
-        m = int(np.ceil(shape[2] / 2))
-        self.frontend = VggFrontend(32*n*m, 4096, num_classes)
-
+        n = int(np.ceil(shape[1] / 2 ** len(cnn)))
+        m = int(np.ceil(shape[2] / 2 ** len(cnn)))
+        self.cnn = cnn
+        self.frontend = VggFrontend(512*n*m, 4096, 4096, ndim)
         self.reset()
 
     def reset(self):
@@ -67,32 +62,49 @@ class VggSimple(N.Module):
         return x
 
 
-class Vgg16(N.Module):
-    def __init__(self, num_classes=10, shape=(3, 224, 224)):
-        super().__init__()
+class Vgg11(_VggBase):
+    def __init__(self, shape=(3, 224, 224), ndim=1000):
+        cnn = N.Sequential(
+            VggBlock2d(shape[0], 64),
+            VggBlock2d(64, 128),
+            VggBlock2d(128, 256, 256),
+            VggBlock2d(256, 512, 512),
+            VggBlock2d(512, 512, 512),
+        )
+        super().__init__(cnn, shape, ndim)
 
-        self.cnn = N.Sequential(
+
+class Vgg13(_VggBase):
+    def __init__(self, shape=(3, 224, 224), ndim=1000):
+        cnn = N.Sequential(
+            VggBlock2d(shape[0], 64, 64),
+            VggBlock2d(64, 128, 128),
+            VggBlock2d(128, 256, 256),
+            VggBlock2d(256, 512, 512),
+            VggBlock2d(512, 512, 512),
+        )
+        super().__init__(cnn, shape, ndim)
+
+
+class Vgg16(_VggBase):
+    def __init__(self, shape=(3, 224, 224), ndim=1000):
+        cnn = N.Sequential(
             VggBlock2d(shape[0], 64, 64),
             VggBlock2d(64, 128, 128),
             VggBlock2d(128, 256, 256, 256),
             VggBlock2d(256, 512, 512, 512),
             VggBlock2d(512, 512, 512, 512),
         )
+        super().__init__(cnn, shape, ndim)
 
-        n = int(np.ceil(shape[1] / 2 / 2 / 2 / 2 / 2))
-        m = int(np.ceil(shape[2] / 2 / 2 / 2 / 2 / 2))
-        self.frontend = VggFrontend(512*n*m, 4096, 4096, num_classes)
 
-        self.reset()
-
-    def reset(self):
-         for m in self.modules():
-            if isinstance(m, (N.Conv2d, N.Linear)):
-                N.init.kaiming_uniform(m.weight)
-                N.init.constant(m.bias, 0)
-
-    def forward(self, x):
-        x = self.cnn(x)
-        x = x.view(x.size(0), -1)
-        x = self.frontend(x)
-        return x
+class Vgg19(_VggBase):
+    def __init__(self, shape=(3, 224, 224), ndim=1000):
+        cnn = N.Sequential(
+            VggBlock2d(shape[0], 64, 64),
+            VggBlock2d(64, 128, 128),
+            VggBlock2d(128, 256, 256, 256, 256),
+            VggBlock2d(256, 512, 512, 512, 512),
+            VggBlock2d(512, 512, 512, 512, 512),
+        )
+        super().__init__(cnn, shape, ndim)

@@ -77,7 +77,7 @@ def main(**kwargs):
     # constructing the optimizer. This is annoying, and this logic is
     # duplicated in the estimator class. Ideally, I'd like the estimator to
     # handle cuda allocation _after_ the optimizer has been constructed...
-    net = AlexNet(num_classes=2, shape=(3, 32, 32))
+    net = AlexNet((3, 32, 32), ndim=2)
     if args.cuda is None:
         args.cuda = 0 if torch.cuda.is_available() else False
     if args.cuda is not False:

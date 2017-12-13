@@ -16,7 +16,7 @@ class AlexNet(N.Module):
             https://github.com/choosehappy/public/blob/master/DL%20tutorial%20Code/common/BASE-alexnet_traing_32w_dropout_db.prototxt
     '''
 
-    def __init__(self, num_classes=10, shape=(3, 128, 128)):
+    def __init__(self, shape=(3, 32, 32), ndim=10):
         super().__init__()
 
         # The Caffe version of this network uses LRN layers,
@@ -47,7 +47,7 @@ class AlexNet(N.Module):
         self.classifier = N.Sequential(
             N.Linear(64*n*m, 64),
             N.ReLU(inplace=True),
-            N.Linear(64, num_classes),
+            N.Linear(64, ndim),
         )
 
         self.reset()
