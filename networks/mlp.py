@@ -1,3 +1,7 @@
+import torch
+import torch.nn as N
+
+
 class MLP(N.Module):
     def __init__(self, *chans):
         super().__init__()
@@ -11,3 +15,10 @@ class MLP(N.Module):
 
     def forward(self, x):
         return self.layers(x)
+
+    def reset(self):
+        for m in self.modules():
+            if isinstance(m, N.Linear):
+                N.init.kaiming_uniform(m.weight)
+                N.init.constant(m.bias, 0)
+        return self
