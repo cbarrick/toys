@@ -35,7 +35,9 @@ def seed(n):
 
 
 def main(**kwargs):
-    kwargs.setdefault('data_size', 500)
+    kwargs.setdefault('data_size', 1000)
+    kwargs.setdefault('patch_size', 256)
+    kwargs.setdefault('ratio', '1:1:0.3')
     kwargs.setdefault('folds', 5)
     kwargs.setdefault('epochs', 600)
     kwargs.setdefault('learning_rate', 0.001)
@@ -60,16 +62,26 @@ def main(**kwargs):
 
     seed(args.seed)
 
-    networks = {
-        'alex': AlexNet((3, 256, 256), ndim=2),
-        'vgg11': Vgg11((3, 256, 256), ndim=2),
-        'vgg16': Vgg16((3, 256, 256), ndim=2),
+    data_args = {
+        'n': args.data_size,
+        'k': args.folds,
+        'size': args.patch_size,
+        'bg_ratio': 0.1,
+        'pos_ratio':  float(args.ratio.split(':')[0]),
+        'edge_ratio': float(args.ratio.split(':')[1]),
+        'bg_ratio':   float(args.ratio.split(':')[2]),
     }
 
     datasets = {
-        'nuclei': NucleiSegmentation(n=args.data_size, k=args.folds, size=256, bg_ratio=0.1),
-        'epi': EpitheliumSegmentation(n=args.data_size, k=args.folds, size=256, bg_ratio=0.1),
-        'tubule': TubuleSegmentation(n=args.data_size, k=args.folds, size=256, bg_ratio=0.1),
+        'nuclei': NucleiSegmentation(**data_args),
+        'epi': EpitheliumSegmentation(**data_args),
+        'tubule': TubuleSegmentation(**data_args),
+    }
+
+    networks = {
+        'alex': AlexNet((3, args.patch_size, args.patch_size), ndim=2),
+        'vgg11': Vgg11((3, args.patch_size, args.patch_size), ndim=2),
+        'vgg16': Vgg16((3, args.patch_size, args.patch_size), ndim=2),
     }
 
     if args.name is None:
@@ -148,10 +160,12 @@ if __name__ == '__main__':
 
     group = parser.add_argument_group('Hyper-parameters')
     group.add_argument('-n', '--data-size', metavar='X', type=int)
+    group.add_argument('-p', '--patch-size', metavar='X', type=int)
+    group.add_argument('-r', '--ratio', metavar='X', type=int)
     group.add_argument('-k', '--folds', metavar='X', type=int)
     group.add_argument('-e', '--epochs', metavar='X', type=int)
     group.add_argument('-l', '--learning-rate', metavar='X', type=float)
-    group.add_argument('-p', '--patience', metavar='X', type=int)
+    group.add_argument('-z', '--patience', metavar='X', type=int)
 
     group = parser.add_argument_group('Performance')
     group.add_argument('-b', '--batch-size', metavar='X', type=int)

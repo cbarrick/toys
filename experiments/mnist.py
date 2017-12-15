@@ -125,7 +125,7 @@ if __name__ == '__main__':
     group = parser.add_argument_group('Hyper-parameters')
     group.add_argument('-e', '--epochs', metavar='X', type=int)
     group.add_argument('-l', '--learning-rate', metavar='X', type=float)
-    group.add_argument('-p', '--patience', metavar='X', type=int)
+    group.add_argument('-z', '--patience', metavar='X', type=int)
 
     group = parser.add_argument_group('Performance')
     group.add_argument('-b', '--batch-size', metavar='X', type=int)
