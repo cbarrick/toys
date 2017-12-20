@@ -1,4 +1,5 @@
 from . import pathology
+from . import utils
 
 from .mnist import MNIST
-from .fashion_mnist import FashionMNIST
+from .mnist import FashionMNIST
