@@ -77,7 +77,7 @@ def main(**kwargs):
 
     opt = O.Adagrad(net.parameters(), lr=args.learning_rate, weight_decay=0.004)
     loss = N.CrossEntropyLoss()
-    model = E.ewc.EwcClassifier(net, opt, loss, name=args.name, cuda=args.cuda, dry_run=args.dry_run)
+    model = E.ewc.Classifier(net, opt, loss, name=args.name, cuda=args.cuda, dry_run=args.dry_run)
 
     for task in args.tasks:
         data = datasets[task[1:]]

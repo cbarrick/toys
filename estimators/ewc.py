@@ -13,7 +13,7 @@ import networks.functional as F
 logger = logging.getLogger(__name__)
 
 
-class EwcClassifier(E.Classifier):
+class Classifier(E.Classifier):
     '''An classifier that learns multiple tasks through elastic weight consolidation.
 
     Elastic weight consolidation (EWC) is a method for training a single model
@@ -42,7 +42,7 @@ class EwcClassifier(E.Classifier):
 
         Returns:
             Returns the fisher information of the trainable parameters.
-            The values are arranged similarly to `EwcClassifier.params()`.
+            The values are arranged similarly to `Classifier.params()`.
         '''
         # Fisher information is the variance of the gradient of the log-likelihood,
         # i.e. E[(𝛻 log f(X;𝜃)) ** 2 | 𝜃]
