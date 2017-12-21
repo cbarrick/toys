@@ -4,19 +4,13 @@ import logging
 from types import SimpleNamespace
 
 import numpy as np
-import sklearn.metrics
-
 import torch
-import torch.nn as N
-import torch.optim as O
 
-from datasets.pathology import NucleiSegmentation
-from datasets.pathology import EpitheliumSegmentation
-from datasets.pathology import TubuleSegmentation
-from networks import AlexNet
-from estimators.ewc import EwcClassifier
-from metrics import TruePositives, FalsePositives, TrueNegatives, FalseNegatives
-from metrics import Accuracy, Precision, Recall, FScore
+import datasets as D
+import estimators as E
+import metrics as M
+import networks as N
+import optim as O
 
 
 logger = logging.getLogger()
@@ -63,9 +57,9 @@ def main(**kwargs):
     seed(args.seed)
 
     datasets = {
-        'nuclei': NucleiSegmentation(n=args.data_size, k=args.folds, size=32),
-        'epi': EpitheliumSegmentation(n=args.data_size, k=args.folds, size=32),
-        'tubule': TubuleSegmentation(n=args.data_size, k=args.folds, size=32),
+        'nuclei': D.pathology.NucleiSegmentation(n=args.data_size, k=args.folds, size=32),
+        'epi': D.pathology.EpitheliumSegmentation(n=args.data_size, k=args.folds, size=32),
+        'tubule': D.pathology.TubuleSegmentation(n=args.data_size, k=args.folds, size=32),
     }
 
     if args.name is None:
@@ -77,7 +71,7 @@ def main(**kwargs):
     # constructing the optimizer. This is annoying, and this logic is
     # duplicated in the estimator class. Ideally, I'd like the estimator to
     # handle cuda allocation _after_ the optimizer has been constructed...
-    net = AlexNet((3, 32, 32), ndim=2)
+    net = N.AlexNet((3, 32, 32), ndim=2)
     if args.cuda is None:
         args.cuda = 0 if torch.cuda.is_available() else False
     if args.cuda is not False:
@@ -87,7 +81,7 @@ def main(**kwargs):
         print(f'================================ Fold {f} ================================')
         opt = O.Adagrad(net.parameters(), lr=args.learning_rate, weight_decay=0.004)
         loss = N.CrossEntropyLoss()
-        model = EwcClassifier(net, opt, loss, name=args.name, cuda=args.cuda, dry_run=args.dry_run)
+        model = E.ewc.EwcClassifier(net, opt, loss, name=args.name, cuda=args.cuda, dry_run=args.dry_run)
 
         for task in args.tasks:
             data = datasets[task[1:]]
@@ -95,7 +89,7 @@ def main(**kwargs):
 
             if task[0] == '+':
                 print(f'-------- Fitting {task[1:]} --------')
-                reports = {'f-score': FScore()}
+                reports = {'f-score': M.FScore()}
                 model.fit(train, validation, epochs=args.epochs, patience=args.patience, reports=reports, batch_size=args.batch_size)
                 model.consolidate(validation, alpha=args.ewc, batch_size=args.batch_size)
                 print()
@@ -103,14 +97,14 @@ def main(**kwargs):
             if task[0] == '-':
                 print(f'-------- Scoring {task[1:]} --------')
                 scores = {
-                    'accuracy': Accuracy(),
-                    'true positives': TruePositives(),
-                    'false positives': FalsePositives(),
-                    'true negatives': TrueNegatives(),
-                    'false negatives': FalseNegatives(),
-                    'precision': Precision(),
-                    'recall': Recall(),
-                    'f-score': FScore(),
+                    'accuracy': M.Accuracy(),
+                    'true positives': M.TruePositives(),
+                    'false positives': M.FalsePositives(),
+                    'true negatives': M.TrueNegatives(),
+                    'false negatives': M.FalseNegatives(),
+                    'precision': M.Precision(),
+                    'recall': M.Recall(),
+                    'f-score': M.FScore(),
                 }
                 for metric, criteria in scores.items():
                     score = model.test(test, criteria, batch_size=args.batch_size)

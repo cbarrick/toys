@@ -1,3 +1,6 @@
+from pathlib import Path
+
+
 def download(data_dir, *urls):
     '''Downloads data at the urls into the data_dir.
 

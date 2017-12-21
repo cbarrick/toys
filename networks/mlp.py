@@ -1,5 +1,6 @@
 import torch
-import torch.nn as N
+
+import networks as N
 
 
 class MLP(N.Module):

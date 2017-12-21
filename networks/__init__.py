@@ -1,3 +1,8 @@
+from torch.nn import *
+
+from . import functional
+from . import init
+
 from .mlp import MLP
 
 from .alexnet import AlexNet

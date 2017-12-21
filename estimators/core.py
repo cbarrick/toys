@@ -3,13 +3,13 @@ import sys
 from pathlib import Path
 
 import torch
-import torch.autograd as A
-import torch.nn as N
-import torch.nn.functional as F
-import torch.nn.parallel as P
-import torch.utils.data as D
 
-from metrics import Mean
+import autograd as A
+import datasets as D
+import networks as N
+import networks.functional as F
+import metrics as M
+
 
 
 logger = logging.getLogger(__name__)
@@ -19,7 +19,7 @@ class _DataParallel(N.Module):
     def __init__(self, module, *args, **kwargs):
         super().__init__()
         self.module = module
-        self.parallel = P.DataParallel(module, *args, **kwargs)
+        self.parallel = N.parallel.DataParallel(module, *args, **kwargs)
 
     def forward(self, *args, **kwargs):
         return self.parallel(*args, **kwargs)
@@ -242,7 +242,7 @@ class Estimator:
 
             # Training
             n = len(train)
-            train_loss = Mean()
+            train_loss = M.Mean()
             print(f'epoch {epoch+1} [0%]', end='\r', flush=True, file=sys.stderr)
             for i, (x, y) in enumerate(train):
                 j = self.partial_fit(x, y)
@@ -364,7 +364,7 @@ class Estimator:
 
         if criteria is None or callable(criteria):
             # average criteria across batches
-            mean = Mean()
+            mean = M.Mean()
             for x, y in data:
                 j = self.score(x, y, criteria)
                 mean.accumulate(j)

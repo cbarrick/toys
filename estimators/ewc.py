@@ -1,20 +1,19 @@
 import logging
 
 import numpy as np
-
 import torch
-import torch.autograd as A
-import torch.nn.functional as F
-import torch.utils.data as D
 
-from estimators import Classifier
-from metrics import Mean
+import autograd as A
+import datasets as D
+import estimators as E
+import metrics as M
+import networks.functional as F
 
 
 logger = logging.getLogger(__name__)
 
 
-class EwcClassifier(Classifier):
+class EwcClassifier(E.Classifier):
     '''An classifier that learns multiple tasks through elastic weight consolidation.
 
     Elastic weight consolidation (EWC) is a method for training a single model
@@ -88,7 +87,7 @@ class EwcClassifier(Classifier):
         data = D.DataLoader(data, **kwargs)
 
         params = [p.clone() for p in self.params()]
-        fisher = [Mean() for p in self.params()]
+        fisher = [M.Mean() for p in self.params()]
 
         for x, y in data:
             for i, f in enumerate(self.fisher_information(x, y)):

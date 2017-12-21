@@ -14,8 +14,9 @@ import logging
 from pathlib import Path
 
 import numpy as np
+import torch
 
-from datasets.utils import download, gunzip, apply_transform
+import datasets as D
 
 
 logger = logging.getLogger(__name__)
@@ -63,15 +64,17 @@ class _MNISTDataset:
     def __getitem__(self, i):
         label = self.labels[i]
         image = self.images[i]
-        image = apply_transform(image, self.transform)
+        image = D.utils.apply_transform(image, self.transform)
+        image = np.expand_dims(image, 0)
+        image = torch.Tensor(image)
         return image, label
 
     def __len__(self):
         return len(self.images)
 
     def download(self, kind):
-        download(self.data_dir, self.urls[kind])
-        gunzip(self.gz_files[kind])
+        D.utils.download(self.data_dir, self.urls[kind])
+        D.utils.gunzip(self.gz_files[kind])
 
     @property
     def gz_files(self):

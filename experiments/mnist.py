@@ -4,18 +4,13 @@ import logging
 from types import SimpleNamespace
 
 import numpy as np
-import sklearn.metrics
-
 import torch
-import torch.nn as N
-import torch.optim as O
 
-from datasets import MNIST
-from datasets import FashionMNIST
-from networks import AlexNet
-from estimators import Classifier
-from metrics import TruePositives, FalsePositives, TrueNegatives, FalseNegatives
-from metrics import Accuracy, Precision, Recall, FScore
+import datasets as D
+import estimators as E
+import metrics as M
+import networks as N
+import optim as O
 
 
 logger = logging.getLogger()
@@ -58,12 +53,12 @@ def main(**kwargs):
     seed(args.seed)
 
     networks = {
-        'alex': AlexNet((1, 27, 27), ndim=10)
+        'alex': N.AlexNet((1, 27, 27), ndim=10)
     }
 
     datasets = {
-        'mnist': MNIST(),
-        'fashion': FashionMNIST(),
+        'mnist': D.MNIST(),
+        'fashion': D.FashionMNIST(),
     }
 
     if args.name is None:
@@ -75,7 +70,7 @@ def main(**kwargs):
         net = networks['alex'].reset()
         opt = O.Adam(net.parameters(), lr=args.learning_rate)
         loss = N.CrossEntropyLoss()
-        model = Classifier(net, opt, loss, name=args.name, dry_run=args.dry_run)
+        model = E.Classifier(net, opt, loss, name=args.name, dry_run=args.dry_run)
 
         data = datasets[task]
         train, test = data.load()
@@ -86,14 +81,14 @@ def main(**kwargs):
 
         print(f'-------- Scoring {task} --------')
         scores = {
-            'accuracy': Accuracy(),
-            'true positives': TruePositives(),
-            'false positives': FalsePositives(),
-            'true negatives': TrueNegatives(),
-            'false negatives': FalseNegatives(),
-            'precision': Precision(),
-            'recall': Recall(),
-            'f-score': FScore(),
+            'accuracy': M.Accuracy(),
+            'true positives': M.TruePositives(),
+            'false positives': M.FalsePositives(),
+            'true negatives': M.TrueNegatives(),
+            'false negatives': M.FalseNegatives(),
+            'precision': M.Precision(),
+            'recall': M.Recall(),
+            'f-score': M.FScore(),
         }
         for metric, criteria in scores.items():
             score = model.test(test, criteria, batch_size=args.batch_size)

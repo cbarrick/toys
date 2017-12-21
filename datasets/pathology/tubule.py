@@ -9,9 +9,9 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import sklearn.naive_bayes
-
 import torch
-import torch.utils.data
+
+import datasets as D
 
 
 logger = logging.getLogger(__name__)
@@ -228,7 +228,7 @@ def lazy_property(prop):
     return property(wrapper)
 
 
-class Dataset(torch.utils.data.Dataset):
+class Dataset(D.Dataset):
     '''A torch `Dataset` that combines positive and negative samples.
     '''
 
@@ -299,6 +299,6 @@ class TubuleSegmentation:
         test = self.datasets[fold]
         validation = self.datasets[(fold + 1) % k]
         train = [ds for ds in self.datasets if ds != test and ds != validation]
-        train = torch.utils.data.ConcatDataset(train)
+        train = D.ConcatDataset(train)
 
         return train, validation, test

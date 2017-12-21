@@ -1,3 +1,5 @@
+from torch.utils.data import *
+
 from . import pathology
 from . import utils
 

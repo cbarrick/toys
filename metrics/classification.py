@@ -1,6 +1,6 @@
 import sys
 
-from metrics.core import Sum, Mean
+import metrics as M
 
 
 # Use epsilon only to prevent ZeroDivisionError.
@@ -10,7 +10,7 @@ EPSILON = sys.float_info.epsilon
 
 class Accuracy:
     def __init__(self, **kwargs):
-        self.val = Mean(**kwargs)
+        self.val = M.Mean(**kwargs)
 
     def accumulate(self, y, h):
         val = (y == h)
@@ -24,7 +24,7 @@ class Accuracy:
 class TruePositives:
     def __init__(self, target=1, **kwargs):
         self.target = target
-        self.val = Sum(**kwargs)
+        self.val = M.Sum(**kwargs)
 
     def accumulate(self, y, h):
         val = (h == self.target) & (y == self.target)
@@ -38,7 +38,7 @@ class TruePositives:
 class FalsePositives:
     def __init__(self, target=1, **kwargs):
         self.target = target
-        self.val = Sum(**kwargs)
+        self.val = M.Sum(**kwargs)
 
     def accumulate(self, y, h):
         val = (h == self.target) & (y != self.target)
@@ -52,7 +52,7 @@ class FalsePositives:
 class TrueNegatives:
     def __init__(self, target=1, **kwargs):
         self.target = target
-        self.val = Sum(**kwargs)
+        self.val = M.Sum(**kwargs)
 
     def accumulate(self, y, h):
         val = (h != self.target) & (y != self.target)
@@ -66,7 +66,7 @@ class TrueNegatives:
 class FalseNegatives:
     def __init__(self, target=1, **kwargs):
         self.target = target
-        self.val = Sum(**kwargs)
+        self.val = M.Sum(**kwargs)
 
     def accumulate(self, y, h):
         val = (h != self.target) & (y == self.target)

@@ -1,3 +1,6 @@
+import networks as N
+
+
 class LRN(N.Module):
     '''A local response normalization layer.
 

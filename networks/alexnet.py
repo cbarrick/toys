@@ -1,7 +1,7 @@
 import numpy as np
-
 import torch
-import torch.nn as N
+
+import networks as N
 
 
 class AlexNet(N.Module):

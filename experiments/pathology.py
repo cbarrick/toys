@@ -4,19 +4,13 @@ import logging
 from types import SimpleNamespace
 
 import numpy as np
-import sklearn.metrics
-
 import torch
-import torch.nn as N
-import torch.optim as O
 
-from datasets.pathology import NucleiSegmentation
-from datasets.pathology import EpitheliumSegmentation
-from datasets.pathology import TubuleSegmentation
-from networks import AlexNet, Vgg11, Vgg16
-from estimators import Classifier
-from metrics import TruePositives, FalsePositives, TrueNegatives, FalseNegatives
-from metrics import Accuracy, Precision, Recall, FScore
+import datasets as D
+import estimators as E
+import metrics as M
+import networks as N
+import optim as O
 
 
 logger = logging.getLogger()
@@ -73,15 +67,15 @@ def main(**kwargs):
     }
 
     datasets = {
-        'nuclei': NucleiSegmentation(**data_args),
-        'epi': EpitheliumSegmentation(**data_args),
-        'tubule': TubuleSegmentation(**data_args),
+        'nuclei': D.pathology.NucleiSegmentation(**data_args),
+        'epi': D.pathology.EpitheliumSegmentation(**data_args),
+        'tubule': D.pathology.TubuleSegmentation(**data_args),
     }
 
     networks = {
-        'alex': AlexNet((3, args.patch_size, args.patch_size), ndim=2),
-        'vgg11': Vgg11((3, args.patch_size, args.patch_size), ndim=2),
-        'vgg16': Vgg16((3, args.patch_size, args.patch_size), ndim=2),
+        'alex': N.AlexNet((3, args.patch_size, args.patch_size), ndim=2),
+        'vgg11': N.Vgg11((3, args.patch_size, args.patch_size), ndim=2),
+        'vgg16': N.Vgg16((3, args.patch_size, args.patch_size), ndim=2),
     }
 
     if args.name is None:
@@ -98,26 +92,26 @@ def main(**kwargs):
             net = networks[net].reset()
             opt = O.Adam(net.parameters())
             loss = N.CrossEntropyLoss()
-            model = Classifier(net, opt, loss, name=args.name, dry_run=args.dry_run)
+            model = E.Classifier(net, opt, loss, name=args.name, dry_run=args.dry_run)
 
             data = datasets[data]
             train, validation, test = data.load(f)
 
             print(f'-------- Fitting {task} --------')
-            reports = {'f-score': FScore()}
+            reports = {'f-score': M.FScore()}
             model.fit(train, validation, epochs=args.epochs, patience=args.patience, reports=reports, batch_size=args.batch_size)
             print()
 
             print(f'-------- Scoring {task} --------')
             scores = {
-                'accuracy': Accuracy(),
-                'true positives': TruePositives(),
-                'false positives': FalsePositives(),
-                'true negatives': TrueNegatives(),
-                'false negatives': FalseNegatives(),
-                'precision': Precision(),
-                'recall': Recall(),
-                'f-score': FScore(),
+                'accuracy': M.Accuracy(),
+                'true positives': M.TruePositives(),
+                'false positives': M.FalsePositives(),
+                'true negatives': M.TrueNegatives(),
+                'false negatives': M.FalseNegatives(),
+                'precision': M.Precision(),
+                'recall': M.Recall(),
+                'f-score': M.FScore(),
             }
             for metric, criteria in scores.items():
                 score = model.test(test, criteria, batch_size=args.batch_size)

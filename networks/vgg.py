@@ -1,11 +1,9 @@
 import logging
 
 import numpy as np
-
 import torch
-import torch.nn as N
 
-from networks import MLP
+import networks as N
 
 
 logger = logging.getLogger(__name__)
@@ -33,7 +31,7 @@ class _VggBase(N.Module):
         n = int(np.ceil(shape[1] / 2 ** len(cnn)))
         m = int(np.ceil(shape[2] / 2 ** len(cnn)))
         self.cnn = cnn
-        self.frontend = MLP(512*n*m, 4096, 4096, ndim)
+        self.frontend = N.MLP(512*n*m, 4096, 4096, ndim)
         self.reset()
 
     def reset(self):
