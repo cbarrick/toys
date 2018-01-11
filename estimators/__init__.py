@@ -1,3 +1,3 @@
-from . import ewc
-
 from .core import *
+
+from . import ewc
