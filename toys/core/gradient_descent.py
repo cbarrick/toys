@@ -1,0 +1,215 @@
+import logging
+
+import torch
+from torch.autograd import Variable
+from torch.nn import DataParallel
+from torch.utils.data import DataLoader
+
+import toys
+from toys.estimators.core import Estimator
+from toys.estimators.torch import TorchModel, TORCH_DTYPES
+from toys.accumulators import Mean
+
+
+logger = logging.getLogger(__name__)
+
+
+class GradientDescent(Estimator):
+    '''A supervised stochastic gradient descent estimator for PyTorch modules.
+    '''
+
+    def __init__(self, module, **defaults):
+        '''Construct a GradientDescent estimator.
+
+        Args:
+            module: A constructor for the PyTorch module to train.
+            **defaults: Overrides the default arguments to `fit`.
+        '''
+        super().__init__(**defaults)
+        self.module = module
+
+    def fit(self, dataset, loss_fn='mse_loss', optimizer='SGD:lr=1e-4', max_epochs=100,
+            batch_size=1, device_ids=None, stop_policy=None, patience=0, dtype='float',
+            **kwargs):
+        '''Trains a TorchModel.
+
+        Users should not call this method, but instead call the estimator
+        directly.
+
+        Args:
+            dataset:
+                The dataset to fit. The dataset must support both `__len__` and
+                integer indexing with `__getitem__`. Each element must be a
+                tuple `(x, y)` where `x` is a datum and `y` is the target.
+            loss_fn:
+                The loss function. If a string is passed, it is looked up in
+                the `torch.nn.functional` module. Otherwise, the argument must
+                be a function which takes the predicted values and the true
+                targets and returns the computed loss.
+            optimizer:
+                A constructor for the optimizer. If a string is given, it is
+                parsed as the name of a class in the `torch.optim` module,
+                optionally followed by keyword arguments of the form
+                ':{KEY}={VAL}' (note the leading ':'). Values will be cast to
+                float when possible. If a callable is given, it should take the
+                trainable parameters and return an optimizer.
+            max_epochs:
+                The maximum number of passes over the data during training.
+            batch_size:
+                The batch size for each iteration of the optimizer. To maximize
+                GPU utilization, it should be an integer multiple of the number
+                of devices.
+            device_ids:
+                A list of CUDA device IDs to use during training.
+                The default is to use all devices.
+            stop_policy:
+                Determines when to halt learning. The argument must be a
+                function which accepts the mean validation or training loss at
+                the end of each epoch and returns true if training should halt.
+                The default is to never stop early.
+            patience:
+                The stop policy must return true this many additional times
+                consecutivly to stop training. A negative value is equivalent
+                to an infinite patience.
+            dtype:
+                Cast the module to this data type. This can be a PyTorch tensor
+                class, a conventional name like 'float' and 'double', or an
+                explicit name like 'float32' and 'float64'.
+            **kwargs:
+                Additional arguments passed to the module constructor.
+
+        Returns:
+            A TorchModel wrapping the learned module. Note that the model is
+            moved to the CPU even if it was trained using GPUs.
+        '''
+        # Get the number of input and output features.
+        # The data must be at least two-dimensional.
+        # FIXME: CNNs use dimension 1 instead of -1 for features
+        proto_x, proto_y = dataset[0]
+        in_features = proto_x.shape[-1]
+        out_features = proto_y.shape[-1]
+
+        # Decode the dtype.
+        if isinstance(dtype, str):
+            dtype = TORCH_DTYPES[dtype]
+
+        # Use all available devices if device_ids is None.
+        if device_ids is None:
+            device_count = torch.cuda.device_count()
+            device_ids = list(range(device_count))
+
+        # Construct the module, cast the dtype, switch to train mode,
+        # and wrap in a DataParallel for multi GPU support.
+        mod = self.module(in_features, out_features, **kwargs)
+        mod = mod.type(dtype).train()
+        mod = DataParallel(mod, device_ids)
+
+        # Parse the optimizer argument into a torch optimizer.
+        # The format is the name of a class in the `torch.optim` module,
+        # optionally followed by keyword arguments of the form ':{KEY}={VAL}'.
+        # Note the leading ':'. Values will be cast to float when possible.
+        # Alternativly, the optimizer argument may be a callable which takes
+        # the parameters to optimize and returns the optimizer.
+        if isinstance(optimizer, str):
+            optim_parts = optimizer.split(':')
+            optim_kwargs = dict(arg.split('=') for arg in optim_parts[1:])
+            for k, v in optim_kwargs.items():
+                try:
+                    v = float(v)
+                    optim_kwargs[k] = v
+                except ValueError:
+                    pass
+            optimizer = optim_parts[0]
+            optimizer = getattr(torch.optim, optimizer)
+            opt = optimizer(mod.parameters(), **optim_kwargs)
+        else:
+            opt = optimizer(mod.parameters())
+        assert hasattr(opt, 'step')
+        assert hasattr(opt, 'zero_grad')
+
+        # Parse the loss_fn argument into a function.
+        # If it is a string, the corresponding function is taken from the
+        # `torch.nn.functional` module. Alternativly, the loss_fn argument may
+        # be a callable which takes two arguments, the predicted values and the
+        # true values, and implements the loss.
+        if isinstance(loss_fn, str):
+            loss_fn = getattr(torch.nn.functional, loss_fn)
+        assert callable(loss_fn)
+
+        # Initialize the early stopping counter.
+        p = patience
+
+        # The default stop policy is to never stop.
+        if stop_policy is None:
+            stop_policy = lambda _: False
+
+        # Helper to repeatedly print messages over each other on the same line.
+        # Note that the cursor is left on the same line.
+        def progress(*vals, sep=' '):
+            print('\u001b[2K', end='\r')  # CSI escape code to clear the line
+            print(*vals, end='', sep=sep, flush=True)
+
+        # Construct the DataLoader.
+        def dataloader(**kwargs):
+            kwargs.setdefault('pin_memory', len(device_ids) > 0)
+            kwargs.setdefault('batch_size', batch_size)
+            return DataLoader(dataset, **kwargs)
+
+        # Perform one iteration of gradient descent.
+        def partial_fit(x, y):
+            opt.zero_grad()
+            if device_ids: x = x.cuda(async=True)
+            if device_ids: y = y.cuda(async=True)
+            x = Variable(x).type(dtype)
+            y = Variable(y).type(dtype)
+            h = mod(x)
+            j = loss_fn(h, y)
+            j.backward()
+            opt.step()
+            return j.data
+
+        # Perform one epoch of gradient descent.
+        def train_epoch():
+            train_set = dataloader(shuffle=True)
+            train_loss = Mean()
+            n = len(train_set)
+            for i, batch in enumerate(train_set):
+                progress(f'[{i/n:.2%}]')
+                j = partial_fit(*batch)
+                train_loss.accumulate(j)
+            return train_loss.reduce()
+
+        # Compute the loss of the validation set, if given.
+        def validate():
+            pass
+
+        # Print a report at the end of an epoch.
+        def report(epoch, val_loss):
+            print('\u001b[2K', end='\r')  # CSI escape code to clear the line
+            print(f'[epoch {epoch+1}]', end='\t')
+            print(f'[loss: {val_loss:0.4e}]', end='\t')
+            print()
+            pass
+
+        # Takes the validation loss from each epoch to determine when to stop.
+        # This just wraps the `stop_policy` with a patience counter.
+        def stop(val_loss):
+            nonlocal p
+            if stop_policy(val_loss):
+                p -= 1
+                return p == -1
+            else:
+                p = patience
+                return False
+
+        # The actual training loop.
+        for epoch in range(max_epochs):
+            train_loss = train_epoch()
+            val_loss = validate() or train_loss
+            report(epoch, val_loss)
+            if stop(val_loss): break
+
+        mod = mod.module  # Unwrap out of DataParallel.
+        mod = mod.eval()  # Switch to eval mode.
+        mod = mod.cpu()   # Release GPU resources.
+        return TorchModel(mod, dtype)

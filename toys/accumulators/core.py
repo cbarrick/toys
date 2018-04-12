@@ -16,12 +16,16 @@ class Sum:
 
 
 class Mean:
-    def __init__(self, **kwargs):
+    def __init__(self, fn=None, **kwargs):
         self.kwargs = kwargs
+        self.fn = fn
         self.n = 0
         self.val = 0
 
     def accumulate(self, batch):
+        if self.fn is not None:
+            batch = self.fn(batch)
+
         if hasattr(batch, 'mean'):
             n = len(batch)
             val = batch.mean(**self.kwargs)
