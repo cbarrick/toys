@@ -6,8 +6,8 @@ from torch.nn import DataParallel
 from torch.utils.data import DataLoader
 
 import toys
-from toys.estimators.core import Estimator
-from toys.estimators.torch import TorchModel, TORCH_DTYPES
+from toys.core.estimator import Estimator
+from toys.core.torch import TorchModel, TORCH_DTYPES
 from toys.accumulators import Mean
 
 
