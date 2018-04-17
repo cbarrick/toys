@@ -70,7 +70,7 @@ def torch_dtype(dtype):
     explicit name like 'float32' or 'float64'. If the input is a known CPU
     tensor class, it is returned as-is.
 
-    Args:
+    Arguments:
         dtype (str or TorchDtype or None):
             A conventional name, explicit name, or known tensor class. ``None``
             is casts to ``torch.Tensor``, which is an alias to the default
@@ -119,7 +119,7 @@ class TorchModel(Model):
     def __init__(self, module, dtype=None):
         '''Construct a TorchModel.
 
-        Args:
+        Arguments:
             module (Module):
                 The PyTorch module being wrapped. The module is cast to the
                 given dtype and moved to the CPU.
@@ -139,7 +139,7 @@ class TorchModel(Model):
     def cuda(self, device=None):
         '''Move the module to a CUDA device.
 
-        Args:
+        Arguments:
             device (int or None):
                 The device to use. Defaults to the first available.
 
@@ -166,7 +166,7 @@ class TorchModel(Model):
         The inputs may be PyTorch Tensors, numpy arrays, or scalars.
         The output will be a numpy array.
 
-        Args:
+        Arguments:
             inputs (Sequence):
                 Passed to the underlying module.
 

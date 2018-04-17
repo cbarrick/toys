@@ -37,7 +37,7 @@ class Estimator(ABC):
     def __init__(self, **defaults):
         '''Construct an estimator.
 
-        Args:
+        Arguments:
             **defaults (Mapping[str, Any]):
                 Overrides the default arguments to `fit`.
         '''
@@ -47,7 +47,7 @@ class Estimator(ABC):
     def __call__(self, *args, **kwargs):
         '''Construct a model, delegating to `fit`.
 
-        Args:
+        Arguments:
             *args (Sequence):
                 Passed directly to `fit`.
             **kwargs (Mapping[str, Any]):
@@ -72,7 +72,7 @@ class Estimator(ABC):
         Users should not call this method directly, but instead call the
         estimator itself.
 
-        Args:
+        Arguments:
             *args (Sequence):
                 Passed directly to `fit`.
             **kwargs (Mapping[str, Any]):

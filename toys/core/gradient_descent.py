@@ -24,7 +24,7 @@ class GradientDescent(Estimator):
     def __init__(self, module, **defaults):
         '''Construct a GradientDescent estimator.
 
-        Args:
+        Arguments:
             module (Module):
                 A constructor for the PyTorch module to train.
             **defaults (Mapping[str, Any]):
@@ -41,7 +41,7 @@ class GradientDescent(Estimator):
         Users should not call this method, but instead call the estimator
         directly.
 
-        Args:
+        Arguments:
             dataset (Dataset):
                 The dataset to fit.
             loss_fn (str or Callable[..., float]):
