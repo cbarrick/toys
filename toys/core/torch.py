@@ -1,16 +1,45 @@
+from typing import Any, Sequence, Union
 import logging
+
 import numpy as np
 
 import torch
 from torch.autograd import Variable
+from torch.nn import Module
+
+from .estimator import Model
 
 
 logger = logging.getLogger(__name__)
 
 
-# A mapping from dtype names to PyTorch tensor classes.
-# Dtype names can be conventional, e.g. 'float' and 'double',
-# or explicit, e.g. 'float32' and 'float64'.
+#: A common supertype for all torch Tensor classes.
+TorchDtype = Union[
+    # CPU tensors
+    torch.FloatTensor,
+    torch.DoubleTensor,
+    torch.HalfTensor,
+    torch.ByteTensor,
+    torch.CharTensor,
+    torch.ShortTensor,
+    torch.IntTensor,
+    torch.LongTensor,
+
+    # CUDA tensors
+    torch.cuda.FloatTensor,
+    torch.cuda.DoubleTensor,
+    torch.cuda.HalfTensor,
+    torch.cuda.ByteTensor,
+    torch.cuda.CharTensor,
+    torch.cuda.ShortTensor,
+    torch.cuda.IntTensor,
+    torch.cuda.LongTensor,
+]
+
+
+#: A mapping from dtype names to PyTorch tensor classes.
+#: Dtype names can be conventional, e.g. 'float' and 'double',
+#: or explicit, e.g. 'float32' and 'float64'.
 TORCH_DTYPES = {
     # Conventional names
     'float': torch.FloatTensor,
@@ -34,32 +63,60 @@ TORCH_DTYPES = {
 }
 
 
-class TorchModel:
+def torch_dtype(dtype):
+    '''Casts dtype to a PyTorch tensor class.
+
+    The input may be a conventional name, like 'float' and 'double', or an
+    explicit name like 'float32' or 'float64'. If the input is a known tensor
+    class, it is returned as-is.
+
+    Args:
+        dtype (str or TorchDtype):
+            A conventional name, explicit name, or known tensor class.
+
+    Returns:
+        cls (TorchDtype):
+            The tensor class corresponding to `dtype`.
+    '''
+    try:
+        return TORCH_DTYPES[dtype]
+    except KeyError:
+        if dtype not in TORCH_DTYPES.values():
+            if isinstance(dtype, str):
+                raise ValueError(f'unknown torch dtype {dtype}')
+            else:
+                raise TypeError(f'expected str or a tensor class, found {type(dtype)}')
+        return dtype
+
+
+class TorchModel(Model):
     '''A wrapper around PyTorch modules.
 
     The primary purpose of this class is to (a) support numpy and scalar
     inputs and (b) to cast outputs to numpy arrays.
 
     Attributes:
-        module: The module being wrapped.
-        dtype: The data type being used.
-        is_cuda: True if the module has been moved to a CUDA device.
+        module (Module):
+            The module being wrapped.
+        dtype (TorchDtype):
+            The data type being used.
+        is_cuda (bool):
+            True if the module has been moved to a CUDA device.
     '''
 
     def __init__(self, module, dtype):
         '''Construct a TorchModel.
 
         Args:
-            module:
+            module (Module):
                 The PyTorch module being wrapped. The module is cast to the
                 given dtype and moved to the CPU.
-            dtype:
+            dtype (str or TorchDtype):
                 The PyTorch data type to operate on, i.e. a Tensor class.
                 The dtype may be given as a string like 'double' or 'float64'.
                 The module and all inputs are cast to this type.
         '''
-        if isinstance(dtype, str):
-            dtype = TORCH_DTYPES[dtype]
+        dtype = torch_dtype(dtype)
         module = module.type(dtype).cpu()
         self.module = module
         self.dtype = dtype
@@ -69,10 +126,11 @@ class TorchModel:
         '''Move the module to a CUDA device.
 
         Args:
-            device: The device to use. Defaults to the first available.
+            device (int or None):
+                The device to use. Defaults to the first available.
 
         Returns:
-            self
+            self (TorchModel)
         '''
         self.module = self.module.cuda(device)
         self.is_cuda = True
@@ -82,7 +140,7 @@ class TorchModel:
         '''Move the module to the CPU.
 
         Returns:
-            self
+            self (TorchModel)
         '''
         self.module = self.module.cpu()
         self.is_cuda = False
@@ -95,13 +153,12 @@ class TorchModel:
         The output will be a numpy array.
 
         Args:
-            inputs: Passed to the underlying module.
+            inputs (Sequence):
+                Passed to the underlying module.
 
         Returns:
-            The output of the module.
-
-        TODO:
-            Support out-of-core datasets (dask arrays).
+            output (Any):
+                The output of the module.
         '''
         # Cast all inputs to the proper Variable type.
         def cast_to_tensor(x):

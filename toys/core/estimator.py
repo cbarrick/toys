@@ -1,3 +1,4 @@
+from typing import Any, Callable, Mapping, Sequence
 import logging
 
 import abc
@@ -5,6 +6,9 @@ from abc import ABC, abstractmethod
 
 
 logger = logging.getLogger(__name__)
+
+
+Model = Callable
 
 
 class Estimator(ABC):
@@ -34,7 +38,8 @@ class Estimator(ABC):
         '''Construct an estimator.
 
         Args:
-            **defaults: Overrides the default arguments to `fit`.
+            **defaults (Mapping[str, Any]):
+                Overrides the default arguments to `fit`.
         '''
         super().__init__()
         self._fit_defaults = defaults
@@ -43,11 +48,14 @@ class Estimator(ABC):
         '''Construct a model, delegating to `fit`.
 
         Args:
-            *args: Passed directly to `fit`.
-            **kwargs: Passed to `fit`, possibly with different defaults.
+            *args (Sequence):
+                Passed directly to `fit`.
+            **kwargs (Mapping[str, Any]):
+                Passed to `fit`, possibly with different defaults.
 
         Returns:
-            The model returned by `fit`.
+            model (Model):
+                The model returned by `fit`.
         '''
         for k, v in self._fit_defaults.items():
             kwargs.setdefault(k, v)
@@ -64,7 +72,14 @@ class Estimator(ABC):
         Users should not call this method directly, but instead call the
         estimator itself.
 
+        Args:
+            *args (Sequence):
+                Passed directly to `fit`.
+            **kwargs (Mapping[str, Any]):
+                Passed to `fit`, possibly with different defaults.
+
         Returns:
-            A callable.
+            model (Model):
+                Any arbitrary callable.
         '''
         pass

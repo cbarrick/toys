@@ -1,15 +1,18 @@
+from typing import Any, Mapping, Sequence
 import logging
 
 import torch
 from torch.autograd import Variable
-from torch.nn import DataParallel
+from torch.nn import DataParallel, Module
+from torch.optim import Optimizer
 from torch.utils.data import DataLoader
 
 import toys
-from toys.core.estimator import Estimator
-from toys.core.torch import TorchModel, TORCH_DTYPES
 from toys.accumulators import Mean
+from toys.datasets.utils import Dataset
 
+from .estimator import Estimator, Model
+from .torch import TorchModel, TorchDtype
 
 logger = logging.getLogger(__name__)
 
@@ -22,8 +25,10 @@ class GradientDescent(Estimator):
         '''Construct a GradientDescent estimator.
 
         Args:
-            module: A constructor for the PyTorch module to train.
-            **defaults: Overrides the default arguments to `fit`.
+            module (Module):
+                A constructor for the PyTorch module to train.
+            **defaults (Mapping[str, Any]):
+                Overrides the default arguments to `fit`.
         '''
         super().__init__(**defaults)
         self.module = module
@@ -37,50 +42,49 @@ class GradientDescent(Estimator):
         directly.
 
         Args:
-            dataset:
-                The dataset to fit. The dataset must support both `__len__` and
-                integer indexing with `__getitem__`. Each element must be a
-                tuple `(x, y)` where `x` is a datum and `y` is the target.
-            loss_fn:
+            dataset (Dataset):
+                The dataset to fit.
+            loss_fn (str or Callable[..., float]):
                 The loss function. If a string is passed, it is looked up in
                 the `torch.nn.functional` module. Otherwise, the argument must
                 be a function which takes the predicted values and the true
                 targets and returns the computed loss.
-            optimizer:
+            optimizer (str or Callable[..., Optimizer]):
                 A constructor for the optimizer. If a string is given, it is
                 parsed as the name of a class in the `torch.optim` module,
                 optionally followed by keyword arguments of the form
                 ':{KEY}={VAL}' (note the leading ':'). Values will be cast to
                 float when possible. If a callable is given, it should take the
                 trainable parameters and return an optimizer.
-            max_epochs:
+            max_epochs (int):
                 The maximum number of passes over the data during training.
-            batch_size:
+            batch_size (int):
                 The batch size for each iteration of the optimizer. To maximize
                 GPU utilization, it should be an integer multiple of the number
                 of devices.
-            device_ids:
+            device_ids (Sequence[int] or None):
                 A list of CUDA device IDs to use during training.
                 The default is to use all devices.
-            stop_policy:
+            stop_policy (Callable[[float], bool] or None):
                 Determines when to halt learning. The argument must be a
                 function which accepts the mean validation or training loss at
                 the end of each epoch and returns true if training should halt.
                 The default is to never stop early.
-            patience:
+            patience (int):
                 The stop policy must return true this many additional times
                 consecutivly to stop training. A negative value is equivalent
                 to an infinite patience.
-            dtype:
+            dtype (str or TorchDtype):
                 Cast the module to this data type. This can be a PyTorch tensor
                 class, a conventional name like 'float' and 'double', or an
                 explicit name like 'float32' and 'float64'.
-            **kwargs:
+            **kwargs (Mapping[str, Any]):
                 Additional arguments passed to the module constructor.
 
         Returns:
-            A TorchModel wrapping the learned module. Note that the model is
-            moved to the CPU even if it was trained using GPUs.
+            model (TorchModel):
+                A model wrapping the learned module. Note that the module is
+                moved to the CPU even if it was trained using GPUs.
         '''
         # Get the number of input and output features.
         # The data must be at least two-dimensional.
@@ -89,14 +93,13 @@ class GradientDescent(Estimator):
         in_features = proto_x.shape[-1]
         out_features = proto_y.shape[-1]
 
-        # Decode the dtype.
-        if isinstance(dtype, str):
-            dtype = TORCH_DTYPES[dtype]
-
         # Use all available devices if device_ids is None.
         if device_ids is None:
             device_count = torch.cuda.device_count()
             device_ids = list(range(device_count))
+
+        # Decode the dtype.
+        dtype = torch_dtype(dtype)
 
         # Construct the module, cast the dtype, switch to train mode,
         # and wrap in a DataParallel for multi GPU support.
