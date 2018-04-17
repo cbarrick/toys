@@ -37,7 +37,7 @@ TorchDtype = Union[
 ]
 
 
-#: A mapping from dtype names to PyTorch tensor classes.
+#: A mapping from dtype names to PyTorch CPU tensor classes.
 #: Dtype names can be conventional, e.g. 'float' and 'double',
 #: or explicit, e.g. 'float32' and 'float64'.
 TORCH_DTYPES = {
@@ -64,29 +64,41 @@ TORCH_DTYPES = {
 
 
 def torch_dtype(dtype):
-    '''Casts dtype to a PyTorch tensor class.
+    '''Casts dtype to a PyTorch CPU tensor class.
 
     The input may be a conventional name, like 'float' and 'double', or an
-    explicit name like 'float32' or 'float64'. If the input is a known tensor
-    class, it is returned as-is.
+    explicit name like 'float32' or 'float64'. If the input is a known CPU
+    tensor class, it is returned as-is.
 
     Args:
-        dtype (str or TorchDtype):
-            A conventional name, explicit name, or known tensor class.
+        dtype (str or TorchDtype or None):
+            A conventional name, explicit name, or known tensor class. ``None``
+            is casts to ``torch.Tensor``, which is an alias to the default
+            tensor class and may be set with ``torch.set_default_tensor_type``.
 
     Returns:
         cls (TorchDtype):
-            The tensor class corresponding to `dtype`.
+            The CPU tensor class corresponding to `dtype`.
+
+    Raises:
+        ValueError:
+            If a string is given that does not name a tensor class.
+        TypeError:
+            If dtype is of an invalid type.
     '''
-    try:
-        return TORCH_DTYPES[dtype]
-    except KeyError:
-        if dtype not in TORCH_DTYPES.values():
-            if isinstance(dtype, str):
-                raise ValueError(f'unknown torch dtype {dtype}')
-            else:
-                raise TypeError(f'expected str or a tensor class, found {type(dtype)}')
+    if dtype is None:
+        return torch.Tensor
+
+    if isinstance(dtype, str):
+        try:
+            return TORCH_DTYPES[dtype]
+        except KeyError:
+            raise ValueError(f'unknown torch dtype {dtype}')
+
+    if dtype in TORCH_DTYPES.values():
         return dtype
+
+    raise TypeError(f'expected str or a CPU tensor class, found {type(dtype)}')
 
 
 class TorchModel(Model):
@@ -104,17 +116,19 @@ class TorchModel(Model):
             True if the module has been moved to a CUDA device.
     '''
 
-    def __init__(self, module, dtype):
+    def __init__(self, module, dtype=None):
         '''Construct a TorchModel.
 
         Args:
             module (Module):
                 The PyTorch module being wrapped. The module is cast to the
                 given dtype and moved to the CPU.
-            dtype (str or TorchDtype):
-                The PyTorch data type to operate on, i.e. a Tensor class.
-                The dtype may be given as a string like 'double' or 'float64'.
-                The module and all inputs are cast to this type.
+            dtype (str or TorchDtype or None):
+                The PyTorch data type to operate on, i.e. a Tensor class. The
+                dtype may be given as a string like 'double' or 'float64'. The
+                default is determined by ``torch.Tensor`` and may be overridden
+                with ``torch.set_default_tensor_type``. The module and all
+                inputs are cast to this type.
         '''
         dtype = torch_dtype(dtype)
         module = module.type(dtype).cpu()

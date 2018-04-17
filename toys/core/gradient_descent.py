@@ -34,7 +34,7 @@ class GradientDescent(Estimator):
         self.module = module
 
     def fit(self, dataset, loss_fn='mse_loss', optimizer='SGD:lr=1e-4', max_epochs=100,
-            batch_size=1, device_ids=None, stop_policy=None, patience=0, dtype='float',
+            batch_size=1, device_ids=None, stop_policy=None, patience=0, dtype=None,
             **kwargs):
         '''Trains a TorchModel.
 
@@ -74,10 +74,12 @@ class GradientDescent(Estimator):
                 The stop policy must return true this many additional times
                 consecutivly to stop training. A negative value is equivalent
                 to an infinite patience.
-            dtype (str or TorchDtype):
+            dtype (str or TorchDtype or None):
                 Cast the module to this data type. This can be a PyTorch tensor
                 class, a conventional name like 'float' and 'double', or an
-                explicit name like 'float32' and 'float64'.
+                explicit name like 'float32' and 'float64'. The default is
+                determined by ``torch.Tensor`` and may be overridden with
+                ``torch.set_default_tensor_type``.
             **kwargs (Mapping[str, Any]):
                 Additional arguments passed to the module constructor.
 
