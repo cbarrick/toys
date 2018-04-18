@@ -19,22 +19,22 @@ The description for arguments and return values start on the line following thei
 
 E.g.::
 
-	def torch_dtype(dtype):
-	    '''Casts dtype to a PyTorch tensor class.
+    def torch_dtype(dtype):
+        '''Casts dtype to a PyTorch tensor class.
 
-	    The input may be a conventional name, like 'float' and 'double', or an
-	    explicit name like 'float32' or 'float64'. If the input is a known
-		tensor class, it is returned as-is.
+        The input may be a conventional name, like 'float' and 'double', or an
+        explicit name like 'float32' or 'float64'. If the input is a known
+        tensor class, it is returned as-is.
 
-	    Args:
-	        dtype (str or TorchDtype):
-	            A conventional name, explicit name, or known tensor class.
+        Args:
+            dtype (str or TorchDtype):
+                A conventional name, explicit name, or known tensor class.
 
-	    Returns:
-	        cls (TorchDtype):
-	            The tensor class corresponding to `dtype`.
-	    '''
-		...
+        Returns:
+            cls (TorchDtype):
+                The tensor class corresponding to `dtype`.
+        '''
+        ...
 
 Type Annotations
 ----------------
