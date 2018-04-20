@@ -7,7 +7,7 @@ from typing import Sequence
 # See PEP 544 <https://www.python.org/dev/peps/pep-0544/>
 try:
     from typing import Protocol
-else:
+except ImportError:
     from abc import ABC as Protocol
 
 

@@ -100,3 +100,6 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+# mypy type checker
+.mypy_cache
