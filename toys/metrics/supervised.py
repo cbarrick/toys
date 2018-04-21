@@ -127,3 +127,15 @@ class FScore(Accumulator):
         tp2 = (1 + beta2) * tp
         fn2 = beta2 * fn
         return tp2 / (tp2 + fn2 + fp + EPSILON)
+
+
+class MeanSquaredError(Accumulator):
+    def __init__(self, **kwargs):
+        self.mean = Mean(**kwargs)
+
+    def accumulate(self, y, h):
+        err = (y - h) ** 2
+        self.mean.accumulate(err)
+
+    def reduce(self):
+        return self.mean.reduce()
