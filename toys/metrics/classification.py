@@ -1,13 +1,14 @@
-import sys
+from sys import float_info
 
-from toys.accumulators import Mean, Sum
+from .core import Accumulator, Mean, Sum
+
 
 # Use epsilon only to prevent ZeroDivisionError.
 # Rounding error may exceed epsilon.
-EPSILON = sys.float_info.epsilon
+EPSILON = float_info.epsilon
 
 
-class Accuracy:
+class Accuracy(Accumulator):
     def __init__(self, **kwargs):
         self.val = Mean(**kwargs)
 
@@ -20,7 +21,7 @@ class Accuracy:
         return self.val.reduce()
 
 
-class TruePositives:
+class TruePositives(Accumulator):
     def __init__(self, target=1, **kwargs):
         self.target = target
         self.val = Sum(**kwargs)
@@ -34,7 +35,7 @@ class TruePositives:
         return self.val.reduce()
 
 
-class FalsePositives:
+class FalsePositives(Accumulator):
     def __init__(self, target=1, **kwargs):
         self.target = target
         self.val = Sum(**kwargs)
@@ -48,7 +49,7 @@ class FalsePositives:
         return self.val.reduce()
 
 
-class TrueNegatives:
+class TrueNegatives(Accumulator):
     def __init__(self, target=1, **kwargs):
         self.target = target
         self.val = Sum(**kwargs)
@@ -62,7 +63,7 @@ class TrueNegatives:
         return self.val.reduce()
 
 
-class FalseNegatives:
+class FalseNegatives(Accumulator):
     def __init__(self, target=1, **kwargs):
         self.target = target
         self.val = Sum(**kwargs)
@@ -76,7 +77,7 @@ class FalseNegatives:
         return self.val.reduce()
 
 
-class Precision:
+class Precision(Accumulator):
     def __init__(self, target=1, **kwargs):
         self.tp = TruePositives(target, **kwargs)
         self.fp = FalsePositives(target, **kwargs)
@@ -91,7 +92,7 @@ class Precision:
         return tp / (tp + fp + EPSILON)
 
 
-class Recall:
+class Recall(Accumulator):
     def __init__(self, target=1, **kwargs):
         self.tp = TruePositives(target, **kwargs)
         self.fn = FalseNegatives(target, **kwargs)
@@ -106,7 +107,7 @@ class Recall:
         return tp / (tp + fn + EPSILON)
 
 
-class FScore:
+class FScore(Accumulator):
     def __init__(self, beta=1, target=1, **kwargs):
         self.beta = beta
         self.tp = TruePositives(target, **kwargs)

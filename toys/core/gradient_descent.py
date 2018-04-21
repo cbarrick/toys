@@ -8,7 +8,7 @@ from torch.optim import Optimizer
 from torch.utils.data import DataLoader
 
 import toys
-from toys.accumulators import Mean
+from toys.metrics import Mean
 from toys.datasets.utils import Dataset
 
 from .estimator import Estimator, Model
