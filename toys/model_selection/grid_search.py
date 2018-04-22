@@ -146,7 +146,7 @@ class GridSearchCV(Estimator):
             scores = {p: list(s) for p, s in scores.items()}
             scores = {p: tuple(np.mean(s, axis=0)) for p, s in scores.items()}
             cv_results = ({'params':p, 'mean_score':s} for p, s in scores.items())
-            cv_results = sorted(cv_results key=lambda x: x['mean_score'])
+            cv_results = sorted(cv_results, key=lambda x: x['mean_score'])
             return cv_results
 
         if n_jobs == 0:

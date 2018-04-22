@@ -102,7 +102,7 @@ def unsupervised_score(metric, **kwargs):
 
     def score(model, *datasets):
         loader = DataLoader(*datasets, **kwargs)
-        for *inputs in loader:
+        for inputs in loader:
             prediction = model(*inputs)
             for m in metric:
                 m.accumulate(prediction)
