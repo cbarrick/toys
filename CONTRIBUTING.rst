@@ -84,11 +84,10 @@ E.g.::
     from torch.autograd import Variable
     from torch.nn import DataParallel, Module
     from torch.optim import Optimizer
-    from torch.utils.data import DataLoader
 
     import toys
     from toys.metrics import Mean
-    from toys.datasets.utils import Dataset
+    from toys.datasets.utils import Dataset, DataLoader
 
     from .estimator import Estimator, Model
     from .torch import TorchModel, TorchDtype
