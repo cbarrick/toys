@@ -139,3 +139,15 @@ class MeanSquaredError(Accumulator):
 
     def reduce(self):
         return self.mean.reduce()
+
+
+class NegMeanSquaredError(Accumulator):
+    def __init__(self, **kwargs):
+        self.mean = Mean(**kwargs)
+
+    def accumulate(self, y, h):
+        err = (y - h) ** 2
+        self.mean.accumulate(err)
+
+    def reduce(self):
+        return -self.mean.reduce()
