@@ -87,65 +87,32 @@ class GradientDescent(Estimator):
                 A model wrapping the learned module. Note that the module is
                 moved to the CPU even if it was trained using GPUs.
         '''
-        # Get the number of input and output features.
-        # The data must be at least two-dimensional.
-        # FIXME: CNNs use dimension 1 instead of -1 for features
         proto_x, proto_y = dataset[0]
         in_features = proto_x.shape[-1]
         out_features = proto_y.shape[-1]
 
-        # Use all available devices if device_ids is None.
         if device_ids is None:
             device_count = torch.cuda.device_count()
             device_ids = list(range(device_count))
 
-        # Decode the dtype.
         dtype = torch_dtype(dtype)
 
-        # Construct the module, cast the dtype, switch to train mode,
-        # and wrap in a DataParallel for multi GPU support.
         mod = self.module(in_features, out_features, **kwargs)
         mod = mod.type(dtype).train()
         mod = DataParallel(mod, device_ids)
 
-        # Parse the optimizer argument into a torch optimizer.
-        # The format is the name of a class in the `torch.optim` module,
-        # optionally followed by keyword arguments of the form ':{KEY}={VAL}'.
-        # Note the leading ':'. Values will be cast to float when possible.
-        # Alternativly, the optimizer argument may be a callable which takes
-        # the parameters to optimize and returns the optimizer.
         if isinstance(optimizer, str):
-            optim_parts = optimizer.split(':')
-            optim_kwargs = dict(arg.split('=') for arg in optim_parts[1:])
-            for k, v in optim_kwargs.items():
-                try:
-                    v = float(v)
-                    optim_kwargs[k] = v
-                except ValueError:
-                    pass
-            optimizer = optim_parts[0]
-            optimizer = getattr(torch.optim, optimizer)
-            opt = optimizer(mod.parameters(), **optim_kwargs)
-        else:
-            opt = optimizer(mod.parameters())
-        assert hasattr(opt, 'step')
-        assert hasattr(opt, 'zero_grad')
+            optimizer = parse_optimizer(optimizer)
+        opt = optimizer(mod.parameters())
 
-        # Parse the loss_fn argument into a function.
-        # If it is a string, the corresponding function is taken from the
-        # `torch.nn.functional` module. Alternativly, the loss_fn argument may
-        # be a callable which takes two arguments, the predicted values and the
-        # true values, and implements the loss.
         if isinstance(loss_fn, str):
-            loss_fn = getattr(torch.nn.functional, loss_fn)
+            loss_fn = parse_loss(loss_fn)
         assert callable(loss_fn)
 
-        # Initialize the early stopping counter.
-        p = patience
+        p = patience  # early stopping counter
 
-        # The default stop policy is to never stop.
         if stop_policy is None:
-            stop_policy = lambda _: False
+            stop_policy = lambda _: False  # never stop
 
         # Helper to repeatedly print messages over each other on the same line.
         # Note that the cursor is left on the same line.
@@ -213,6 +180,6 @@ class GradientDescent(Estimator):
             if stop(val_loss): break
 
         mod = mod.module  # Unwrap out of DataParallel.
-        mod = mod.eval()  # Switch to eval mode.
+        mod = mod.eval()  # Exit of training mode.
         mod = mod.cpu()   # Release GPU resources.
         return TorchModel(mod, dtype)
