@@ -7,10 +7,10 @@ from torch.nn import DataParallel, Module
 from torch.optim import Optimizer
 
 import toys
+from toys import Estimator, Model
 from toys.metrics import Mean
 from toys.datasets.utils import Dataset, DataLoader
 
-from .estimator import Estimator, Model
 from .torch import TorchModel, TorchDtype
 
 logger = logging.getLogger(__name__)
