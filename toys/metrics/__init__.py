@@ -1,6 +1,6 @@
-from .core import Accumulator
-from .core import Mean
-from .core import Sum
+from .common import Accumulator
+from .common import Mean
+from .common import Sum
 
 from .score_fn import ScoreFn
 from .score_fn import supervised_score
