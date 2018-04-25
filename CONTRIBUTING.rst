@@ -81,7 +81,6 @@ E.g.::
     import pandas as pd
 
     import torch
-    from torch.autograd import Variable
     from torch.nn import DataParallel, Module
     from torch.optim import Optimizer
 

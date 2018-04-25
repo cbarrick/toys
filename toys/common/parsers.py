@@ -43,19 +43,19 @@ def parse_activation(act):
 def parse_initializer(init):
     init, kwargs = parse_str(init)
 
-    if init == 'uniform': return lambda x: nn.init.uniform(x, **kwargs)
-    if init == 'normal': return lambda x: nn.init.normal(x, **kwargs)
-    if init == 'constant': return lambda x: nn.init.constant(x, **kwargs)
-    if init == 'eye': return lambda x: nn.init.eye(x, **kwargs)
-    if init == 'dirac': return lambda x: nn.init.dirac(x, **kwargs)
-    if init == 'xavier': return lambda x: nn.init.xavier_uniform(x, **kwargs)
-    if init == 'xavier_uniform': return lambda x: nn.init.xavier_uniform(x, **kwargs)
-    if init == 'xavier_normal': return lambda x: nn.init.xavier_normal(x, **kwargs)
-    if init == 'kaiming': return lambda x: nn.init.kaiming_uniform(x, **kwargs)
-    if init == 'kaiming_uniform': return lambda x: nn.init.kaiming_uniform(x, **kwargs)
-    if init == 'kaiming_normal': return lambda x: nn.init.kaiming_normal(x, **kwargs)
-    if init == 'orthogonal': return lambda x: nn.init.orthogonal(x, **kwargs)
-    if init == 'sparse': return lambda x: nn.init.sparse(x, **kwargs)
+    if init == 'uniform': return lambda x: nn.init.uniform_(x, **kwargs)
+    if init == 'normal': return lambda x: nn.init.normal_(x, **kwargs)
+    if init == 'constant': return lambda x: nn.init.constant_(x, **kwargs)
+    if init == 'eye': return lambda x: nn.init.eye_(x, **kwargs)
+    if init == 'dirac': return lambda x: nn.init.dirac_(x, **kwargs)
+    if init == 'xavier': return lambda x: nn.init.xavier_uniform_(x, **kwargs)
+    if init == 'xavier_uniform': return lambda x: nn.init.xavier_uniform_(x, **kwargs)
+    if init == 'xavier_normal': return lambda x: nn.init.xavier_normal_(x, **kwargs)
+    if init == 'kaiming': return lambda x: nn.init.kaiming_uniform_(x, **kwargs)
+    if init == 'kaiming_uniform': return lambda x: nn.init.kaiming_uniform_(x, **kwargs)
+    if init == 'kaiming_normal': return lambda x: nn.init.kaiming_normal_(x, **kwargs)
+    if init == 'orthogonal': return lambda x: nn.init.orthogonal_(x, **kwargs)
+    if init == 'sparse': return lambda x: nn.init.sparse_(x, **kwargs)
 
     # `init` may also be the name of an activation function,
     # in which case we return `xavier_uniform` with the proper gain.
@@ -98,3 +98,28 @@ def parse_loss(loss):
 
     loss = getattr(nn.functional, loss)
     return lambda x: loss(x, **kwargs)
+
+
+def parse_dtype(dtype):
+    if isinstance(dtype, torch.dtype):
+        return dtype
+
+    if dtype == 'half': return torch.half
+    if dtype == 'float': return torch.float
+    if dtype == 'double': return torch.double
+
+    if dtype == 'float16': return torch.float16
+    if dtype == 'float32': return torch.float32
+    if dtype == 'float64': return torch.float64
+
+    if dtype == 'short': return torch.short
+    if dtype == 'int': return torch.int
+    if dtype == 'long': return torch.long
+
+    if dtype == 'uint8': return torch.uint8
+    if dtype == 'int8': return torch.int8
+    if dtype == 'int16': return torch.int16
+    if dtype == 'int32': return torch.int32
+    if dtype == 'int64': return torch.int64
+
+    raise ValueError(f'unknown dtype {repr(dtype)}')

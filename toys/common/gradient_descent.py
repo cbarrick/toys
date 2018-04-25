@@ -2,7 +2,6 @@ from typing import Any, Mapping, Sequence
 import logging
 
 import torch
-from torch.autograd import Variable
 from torch.nn import DataParallel, Module
 from torch.optim import Optimizer
 
@@ -99,11 +98,10 @@ class GradientDescent(Estimator):
         stop_policy = stop_policy or never_stop
         optimizer = parse_optimizer(optimizer)
         loss_fn = parse_loss(loss_fn)
-        dtype = dtype or torch.Tensor  # TODO: update to new `torch.dtype` type
+        dtype = parse_dtype(dtype)
 
-        dtype = torch_dtype(dtype)
         mod = self.module(**kwargs)
-        mod = mod.type(dtype).train()
+        mod = mod.to(dtype).train()
         mod = DataParallel(mod, device_ids)
         opt = optimizer(mod.parameters())
 
@@ -123,15 +121,13 @@ class GradientDescent(Estimator):
         # Perform one iteration of gradient descent.
         def partial_fit(x, y):
             opt.zero_grad()
-            if device_ids: x = x.cuda(async=True)
-            if device_ids: y = y.cuda(async=True)
-            x = Variable(x).type(dtype)
-            y = Variable(y).type(dtype)
+            x = x.to(dtype)
+            y = y.to(dtype)
             h = mod(x)
             j = loss_fn(h, y)
             j.backward()
             opt.step()
-            return j.data
+            return j.detach()
 
         # Perform one epoch of gradient descent.
         def train_epoch():

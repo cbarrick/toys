@@ -3,8 +3,8 @@ from typing import Sequence
 import numpy as np
 
 import torch
+from torch import Tensor
 from torch import nn
-from torch.autograd import Variable
 
 import toys
 from toys import current_context, parse_activation, parse_initializer
@@ -21,7 +21,7 @@ class FullyConnected(nn.Module):
             output_shape (int or Sequence[int]):
                 The shape of a single output instance, i.e. without a batch
                 dimension. A scaler ``n`` is interpreted as ``(n,)``.
-            activation ([Variable] -> Variable or str or None):
+            activation ([Tensor] -> Tensor or str or None):
                 An activation function to apply after the linear operation. If
                 a string is given, it is interpreted by `parse_activation`.
                 Explicitly pass `None` for no activation. The default is taken
@@ -62,8 +62,8 @@ class FullyConnected(nn.Module):
         output_flat = int(np.prod(output_shape))
         linear = nn.Linear(input_flat, output_flat)
 
-        linear.weight.data = init(linear.weight.data)
-        linear.bias.data = bias_init(linear.bias.data)
+        linear.weight = init(linear.weight)
+        linear.bias = bias_init(linear.bias)
 
         self.input_shape = input_shape
         self.output_shape = output_shape
