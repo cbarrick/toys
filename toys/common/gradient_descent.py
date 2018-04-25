@@ -113,11 +113,6 @@ class GradientDescent(Estimator):
             print('\u001b[2K', end='\r')  # CSI escape code to clear the line
             print(*vals, end='', sep=sep, flush=True)
 
-        # Construct the DataLoader.
-        def dataloader(**kwargs):
-            kwargs.setdefault('batch_size', batch_size)
-            return DataLoader(dataset, **kwargs)
-
         # Perform one iteration of gradient descent.
         def partial_fit(x, y):
             opt.zero_grad()
@@ -131,7 +126,7 @@ class GradientDescent(Estimator):
 
         # Perform one epoch of gradient descent.
         def train_epoch():
-            train_set = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+            train_set = DataLoader(x, y, batch_size=batch_size, shuffle=True)
             train_loss = Mean()
             n = len(train_set)
             for i, batch in enumerate(train_set):
