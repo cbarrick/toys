@@ -7,7 +7,7 @@ from torch.nn import DataParallel, Module
 from torch.optim import Optimizer
 
 import toys
-from toys import Estimator, Model
+from toys import Estimator, Model, current_context, parse_loss, parse_optimizer
 from toys.metrics import Mean
 from toys.datasets.utils import Dataset, DataLoader
 
@@ -32,17 +32,20 @@ class GradientDescent(Estimator):
         super().__init__(**defaults)
         self.module = module
 
-    def fit(self, dataset, loss_fn='mse_loss', optimizer='SGD:lr=1e-4', max_epochs=100,
-            batch_size=1, device_ids=None, stop_policy=None, patience=0, dtype=None,
-            **kwargs):
+    def fit(self, x, y, loss_fn='mse', optimizer='SGD:lr=1e-4', max_epochs=100, batch_size=1,
+            device_ids=None, stop_policy=None, patience=-1, dtype=None, **kwargs):
         '''Trains a TorchModel.
 
         Users should not call this method, but instead call the estimator
         directly.
 
         Arguments:
-            dataset (Dataset):
-                The dataset to fit.
+            x (Dataset):
+                The inputs to train against.
+            y (Dataset):
+                The targets corresponding to `x`.
+
+        Keyword Arguments:
             loss_fn (str or Callable[..., float]):
                 The loss function. If a string is passed, it is looked up in
                 the `torch.nn.functional` module. Otherwise, the argument must
@@ -79,40 +82,32 @@ class GradientDescent(Estimator):
                 explicit name like 'float32' and 'float64'. The default is
                 determined by ``torch.Tensor`` and may be overridden with
                 ``torch.set_default_tensor_type``.
-            **kwargs (Mapping[str, Any]):
-                Additional arguments passed to the module constructor.
+            **kwargs:
+                Additional keyword arguments are forwarded to the module
+                constructor.
 
         Returns:
             model (TorchModel):
                 A model wrapping the learned module. Note that the module is
                 moved to the CPU even if it was trained using GPUs.
         '''
-        proto_x, proto_y = dataset[0]
-        in_features = proto_x.shape[-1]
-        out_features = proto_y.shape[-1]
+        device_count = torch.cuda.device_count()
+        all_devices = list(range(device_count))
+        never_stop = lambda _: False
 
-        if device_ids is None:
-            device_count = torch.cuda.device_count()
-            device_ids = list(range(device_count))
+        device_ids = device_ids or all_devices
+        stop_policy = stop_policy or never_stop
+        optimizer = parse_optimizer(optimizer)
+        loss_fn = parse_loss(loss_fn)
+        dtype = dtype or torch.Tensor  # TODO: update to new `torch.dtype` type
 
         dtype = torch_dtype(dtype)
-
-        mod = self.module(in_features, out_features, **kwargs)
+        mod = self.module(**kwargs)
         mod = mod.type(dtype).train()
         mod = DataParallel(mod, device_ids)
-
-        if isinstance(optimizer, str):
-            optimizer = parse_optimizer(optimizer)
         opt = optimizer(mod.parameters())
 
-        if isinstance(loss_fn, str):
-            loss_fn = parse_loss(loss_fn)
-        assert callable(loss_fn)
-
         p = patience  # early stopping counter
-
-        if stop_policy is None:
-            stop_policy = lambda _: False  # never stop
 
         # Helper to repeatedly print messages over each other on the same line.
         # Note that the cursor is left on the same line.
@@ -140,7 +135,7 @@ class GradientDescent(Estimator):
 
         # Perform one epoch of gradient descent.
         def train_epoch():
-            train_set = dataloader(shuffle=True)
+            train_set = DataLoader(dataset, batch_size=batch_size, shuffle=True)
             train_loss = Mean()
             n = len(train_set)
             for i, batch in enumerate(train_set):

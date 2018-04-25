@@ -4,6 +4,9 @@ import logging
 import abc
 from abc import ABC, abstractmethod
 
+import toys
+from toys.datasets.utils import Dataset
+
 
 logger = logging.getLogger(__name__)
 
@@ -14,24 +17,17 @@ Model = Callable
 class Estimator(ABC):
     '''A useful base class for estimators.
 
-    In toys, an estimator is any callable that returns a model. The `Estimator`
-    base class provides convenient semantics for implementing estimators.
+    An estimator is any callable that returns a model. The `Estimator` base
+    class provides a convenient API for implementing estimators.
 
     Subclasses of `Estimator` implement a `fit` method which constructs the
     model. This method typically accepts a few required arguments (e.g. the
     training data) and many optional arguments (e.g. the hyperparameters).
 
-    The convenience of the `Estimator` class is that the defaults for any of
-    the arguments to `fit` are overridden by the arguments passed `__init__`.
-    That is to say, the values for arguments are resolved in the following
-    order:
-
-    1. Arguments passed directly to the estimator (i.e. `__call__`).
-    2. Keyword arguments passed to the constructor (i.e. `__init__`).
-    3. Default arguments defined by `fit`.
-
-    Note that users should not call the `fit` method but instead call the
-    estimator directly.
+    Instances of `Estimator` have a dictionary parameter `defaults`. When the
+    estimator is called as a function, it delegates to the `fit` method using
+    this mapping as default keyword arguments. This means that you likely
+    never want to call the `fit` method diretly.
     '''
 
     def __init__(self, **defaults):
@@ -39,44 +35,45 @@ class Estimator(ABC):
 
         Arguments:
             **defaults (Mapping[str, Any]):
-                Overrides the default arguments to `fit`.
+                Overrides the default hyperparameters.
         '''
         super().__init__()
-        self._fit_defaults = defaults
+        self.defaults = defaults
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *datasets, **params):
         '''Construct a model, delegating to `fit`.
 
         Arguments:
-            *args (Sequence):
+            *datasets (Dataset):
                 Passed directly to `fit`.
-            **kwargs (Mapping[str, Any]):
-                Passed to `fit`, possibly with different defaults.
+            **params:
+                Passed to `fit`, with defaults taken from ``self.defaults``.
 
         Returns:
             model (Model):
                 The model returned by `fit`.
         '''
-        for k, v in self._fit_defaults.items():
-            kwargs.setdefault(k, v)
-        return self.fit(*args, **kwargs)
+        params = self.defaults.copy().update(params)
+        return self.fit(*datasets, **params)
 
     @abstractmethod
-    def fit(self, *args, **kwargs):
+    def fit(self, *datasets, **params):
         '''Constructs a model.
-
-        The model can be any callable, and is usually some learned function.
 
         Subclasses must implement this method.
 
-        Users should not call this method directly, but instead call the
-        estimator itself.
+        The return value can be any callable, and is usually some learned
+        function. Meta-estimators like `GridSearchCV` return other estimators.
+
+        When the estimator is called as a function, it delegates to the `fit`
+        method using ``self.defaults`` as default keyword arguments. This
+        means that you likely never want to call `fit` diretly.
 
         Arguments:
-            *args (Sequence):
-                Passed directly to `fit`.
-            **kwargs (Mapping[str, Any]):
-                Passed to `fit`, possibly with different defaults.
+            *datasets (Dataset):
+                The datasets required to train the model.
+            **params:
+                The hyperparameters to use while training the model.
 
         Returns:
             model (Model):
