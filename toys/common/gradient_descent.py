@@ -6,9 +6,10 @@ from torch.nn import DataParallel, Module
 from torch.optim import Optimizer
 
 import toys
-from toys import Estimator, Model, current_context, parse_loss, parse_optimizer
-from toys.metrics import Mean
+from toys import Estimator, Model, current_context
 from toys.datasets.utils import Dataset, DataLoader
+from toys.metrics import Mean
+from toys.parsers import parse_dtype, parse_loss, parse_optimizer
 
 from .torch import TorchModel, TorchDtype
 
