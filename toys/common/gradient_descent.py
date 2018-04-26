@@ -105,8 +105,6 @@ class GradientDescent(Estimator):
         mod = DataParallel(mod, device_ids)
         opt = optimizer(mod.parameters())
 
-        p = patience  # early stopping counter
-
         # Helper to repeatedly print messages over each other on the same line.
         # Note that the cursor is left on the same line.
         def progress(*vals, sep=' '):
@@ -149,6 +147,7 @@ class GradientDescent(Estimator):
 
         # Takes the validation loss from each epoch to determine when to stop.
         # This just wraps the `stop_policy` with a patience counter.
+        p = patience
         def stop(val_loss):
             nonlocal p
             if stop_policy(val_loss):
@@ -165,7 +164,12 @@ class GradientDescent(Estimator):
             report(epoch, val_loss)
             if stop(val_loss): break
 
-        mod = mod.module  # Unwrap out of DataParallel.
-        mod = mod.eval()  # Exit of training mode.
+        mod = mod.module  # Unwrap from DataParallel.
+        mod = mod.eval()  # Exit training mode.
         mod = mod.cpu()   # Release GPU resources.
-        return TorchModel(mod, dtype)
+
+        proto = x[0]
+        shape = proto.shape
+        dim = len(shape)
+
+        return TorchModel(mod, dim)
