@@ -25,18 +25,18 @@ class GradientDescent(Estimator):
         Arguments:
             module (Module):
                 A constructor for the PyTorch module to train.
-            **defaults (Mapping[str, Any]):
-                Overrides the default arguments to `fit`.
+            **defaults:
+                Default values for hyperparameters.
         '''
         super().__init__(**defaults)
         self.module = module
 
-    def fit(self, x, y, loss_fn='mse', optimizer='SGD:lr=1e-4', max_epochs=100, batch_size=1,
+    def fit(self, x, y, *, loss_fn='mse', optimizer='SGD:lr=1e-4', max_epochs=100, batch_size=1,
             device_ids=None, stop_policy=None, patience=-1, dtype=None, **kwargs):
         '''Trains a TorchModel.
 
-        Users should not call this method, but instead call the estimator
-        directly.
+        Users should not call this method directly, but instead call the
+        estimator as a function.
 
         Arguments:
             x (Dataset):
