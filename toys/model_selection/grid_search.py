@@ -1,4 +1,4 @@
-from typing import Callable, Sequence, Mapping
+from typing import Any, Callable, Dict, Sequence, Mapping
 from itertools import groupby
 
 import numpy as np
@@ -47,14 +47,43 @@ def search_param_grid(grid):
             yield from search_param_grid(g)
 
 
+class TunedEstimator(Estimator):
+    '''An estimator whose default hyperparameters have been tuned by by a
+    meta-estimator, like `GridSearchCV`.
+
+    A `TunedEstimator` wraps an underlying estimator together with a set of
+    default hyperparameters.
+
+    Attributes:
+        estimator (Estimator):
+            The underlying estimator.
+        params (Dict[str, Any]):
+            The best hyperparameters found by the parameter search.
+        cv_results (Dict[str, Any] or None):
+            Overall results of the search which generated this estimator.
+    '''
+    def __init__(self, estimator, params, cv_results=None):
+        super.__init__()
+        self.estimator = estimator
+        self.params = dict(best_params)
+        self.cv_results = dict(cv_results or {})
+
+    def fit(self, *datasets, **hyperparams):
+        params = {**self.params, **hyperparams}
+        model = estimator(*datasets, **params)
+        return model
+
+
 class GridSearchCV(Estimator):
-    def fit(self, *datasets, estimator=None, param_grid=None, cv=3, metric=None,
-            score_fn='supervised', n_jobs=1):
+    def fit(self, *datasets, estimator=None, param_grid=None, cv=3,
+            metric=None, score_fn='supervised', n_jobs=0):
         '''Search for the best parameters of an model.
 
         Arguments:
             *datasets (Sequence[Dataset]):
                 The datasets to which the estimator is fit.
+
+        Keyword Arguments:
             estimator (Estimator or None):
                 The estimator which fits the model. The estimator be specified
                 either when constructing or calling the `GridSearchCV` and
@@ -83,12 +112,14 @@ class GridSearchCV(Estimator):
                 default depends on `score_fn`.
             n_jobs (int or None):
                 The number of worker processes. If 0, all work is done in the
-                main process. If negative or None, the number returned by
-                `os.cpu_count()` is used.
+                main process. If None, the default is `os.cpu_count()`.
 
         Returns:
-            model (Model):
-                A model fit with the best parameters over the entire dataset.
+            best_estimator (TunedEstimator):
+                An estimator which defaults to using the best hyperparameters
+                found through cross validated grid search. The estimator has
+                an attribute `cv_results` which contains the overall results
+                of the grid search.
 
         Raises:
             ValueError:
@@ -115,9 +146,6 @@ class GridSearchCV(Estimator):
             score_fn = unsupervised_score(metric)
         else:
             assert callable(score_fn)
-
-        if n_jobs < 0:
-            n_jobs = None
 
         # The algorithm below follows a map-reduce pattern for parallelism:
         #
@@ -160,6 +188,5 @@ class GridSearchCV(Estimator):
         cv_results = combine(scores)
         best_result = cv_results[-1]
         best_params = best_result['params']
-        best_model = estimator(*datasets, **best_params)
-        best_model.cv_results = cv_results
-        return best_model
+        best_estimator = TunedEstimator(estimator, best_params, cv_results)
+        return best_estimator
