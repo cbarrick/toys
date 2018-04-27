@@ -1,5 +1,4 @@
 from typing import Any, Mapping, Sequence
-import logging
 
 import torch
 from torch.nn import DataParallel, Module
@@ -11,9 +10,7 @@ from toys.datasets.utils import Dataset, DataLoader
 from toys.metrics import Mean
 from toys.parsers import parse_dtype, parse_loss, parse_optimizer
 
-from .torch import TorchModel, TorchDtype
-
-logger = logging.getLogger(__name__)
+from .torch import TorchModel
 
 
 class GradientDescent(Estimator):
@@ -76,7 +73,7 @@ class GradientDescent(Estimator):
                 The stop policy must return true this many additional times
                 consecutivly to stop training. A negative value is equivalent
                 to an infinite patience.
-            dtype (str or TorchDtype or None):
+            dtype (str or torch.dtype or None):
                 Cast the module to this data type. This can be a PyTorch tensor
                 class, a conventional name like 'float' and 'double', or an
                 explicit name like 'float32' and 'float64'. The default is

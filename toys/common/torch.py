@@ -1,5 +1,4 @@
 from typing import Tuple
-import logging
 
 import numpy as np
 
@@ -7,9 +6,6 @@ import torch
 from torch.nn import Module
 
 from .estimator import Model
-
-
-logger = logging.getLogger(__name__)
 
 
 class TorchModel(Model):

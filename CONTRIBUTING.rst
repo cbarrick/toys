@@ -55,24 +55,25 @@ When types become complex, create an alias, e.g.::
 
 Imports
 -------
-Imports within the same immediate package are relative. All other imports are absolute. This allows package names to be changed without modifying code within the package, in the common case.
+Use relative imports for anything under the current package, and use absolute imports for everything else. This allows package to be moved without modifying their contents, in the common case (other cases are a bad smell).
 
-Imports are grouped by top-level package, and each group is separated by a single blank line. Groups are sorted by top-level package name except when conflicting with the rules below.
+Prefer to import objects directly into scope, unless there is a strong convention otherwise.
 
-The the first import group is reserved for the Python standard library.
+Group imports by dependency, and separate each group by a single blank line. The first import should be the top-level package of the dependency. Sort groups by dependency name except when conflicting with the following.
 
-The second import group is reserved for the "scientific Python standard library". That is ``numpy``, ``scipy``, ``matplotlib``, and ``pandas``. Other packages that may be included in this section include ``dask`` and ``xarray`` or any other general purpose data handling tool. All imports in this section must be simple. If you find yourself importing many things from any of these packages, use a dedicated import group instead.
+Reserve the first group for the Python standard library.
 
-Relative imports and imports from the ``toys`` package are the last and second to last groups respectively.
+Reserve the second group for the SciPy stack, e.g. ``numpy``, ``scipy``, ``matplotlib``, and ``pandas``. Other general purpose data handling tools may be included in this section, like ``dask`` and ``xarray``. Use simple ``import`` statements in this group. If you find yourself writing many import from the same package, use a dedicated group instead.
 
-Groups for specific packages always import the top-level package directly as the first line of the group. All other lines are sorted.
+Import the top-level package for each dependency as the first line of the group. Sort all other imports.
 
-All classes used in type signatures in the doc strings should be imported and in scope as used. This makes type signatures unambiguous. Otherwise dead imports are not allowed.
+Place relative imports in a group after the dependency imports.
+
+Import all classes used in doc strings, and use objects in doc strings as imported. This makes type signatures unambiguous. Otherwise avoid dead imports.
 
 E.g.::
 
     from typing import Any, Mapping, Sequence
-    import logging
 
     import numpy as np
     import scipy
@@ -89,7 +90,7 @@ E.g.::
     from toys.datasets.utils import Dataset, DataLoader
 
     from .estimator import Estimator, Model
-    from .torch import TorchModel, TorchDtype
+    from .torch import TorchModel
 
 Code layout
 -----------

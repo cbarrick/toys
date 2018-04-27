@@ -1,14 +1,10 @@
 from typing import Any, Callable, Mapping, Sequence
-import logging
 
 import abc
 from abc import ABC, abstractmethod
 
 import toys
 from toys.datasets.utils import Dataset
-
-
-logger = logging.getLogger(__name__)
 
 
 Model = Callable

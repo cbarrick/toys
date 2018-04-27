@@ -1,10 +1,6 @@
 from abc import abstractmethod
 from typing import Sequence
 
-
-# The Protocol class introduced in Python 3.7 is an improvement over the older
-# ABC class. TODO: Consider dropping support for versions older than 3.7.
-# See PEP 544 <https://www.python.org/dev/peps/pep-0544/>
 try:
     from typing import Protocol
 except ImportError:
