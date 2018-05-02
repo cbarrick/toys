@@ -3,7 +3,7 @@ from typing import Callable, Tuple, Union
 import toys
 from toys.datasets.utils import Dataset, DataLoader
 
-from .core import Accumulator
+from .common import Accumulator
 from .supervised import NegMeanSquaredError
 
 

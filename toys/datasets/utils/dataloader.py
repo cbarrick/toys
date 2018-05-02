@@ -1,8 +1,7 @@
 import torch
 from torch.utils.data import DataLoader as TorchDataLoader
 
-import toys
-from toys.datasets.utils import Zip
+from .utils import Zip
 
 
 class DataLoader(TorchDataLoader):

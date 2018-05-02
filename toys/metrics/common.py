@@ -2,7 +2,7 @@ from abc import abstractmethod
 from typing import Callable
 
 import toys
-from toys import Model
+from toys.estimator import Model
 from toys.datasets.utils import Dataset
 
 try:

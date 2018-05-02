@@ -5,7 +5,8 @@ import numpy as np
 import torch
 from torch.nn import Module
 
-from .estimator import Model
+import toys
+from toys.estimator import Model
 
 
 class TorchModel(Model):
@@ -46,7 +47,7 @@ class TorchModel(Model):
         self.module = module
         self.dims = dims or None
 
-    def __getattr__(self name):
+    def __getattr__(self, name):
         '''Attribute access is delecated to the underlying module.
         '''
         return getattr(self.module, name)
