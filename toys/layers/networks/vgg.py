@@ -32,7 +32,7 @@ def parse_args(kwargs):
     return conv_args, dense_args, output_args
 
 
-class _VggBase(nn.Module):
+class _VGGBase(nn.Module):
     def __init__(self, cnn, dense, output):
         super().__init__()
         self.cnn = cnn
@@ -46,7 +46,7 @@ class _VggBase(nn.Module):
         return x
 
 
-class Vgg11(_VggBase):
+class VGG11(_VGGBase):
     def __init__(self, in_shape, out_shape, **kwargs):
         (*batch, height, width, in_channels) = in_shape
         transition_shape = (*batch, height//2**5, width//2**5, 512)
@@ -70,7 +70,7 @@ class Vgg11(_VggBase):
         super().__init__(cnn, dense, output)
 
 
-class Vgg13(_VggBase):
+class VGG13(_VGGBase):
     def __init__(self, in_shape, out_shape, **kwargs):
         (*batch, height, width, in_channels) = in_shape
         transition_shape = (*batch, height//2**5, width//2**5, 512)
@@ -94,7 +94,7 @@ class Vgg13(_VggBase):
         super().__init__(cnn, dense, output)
 
 
-class Vgg16(_VggBase):
+class VGG16(_VGGBase):
     def __init__(self, in_shape, out_shape, **kwargs):
         (*batch, height, width, in_channels) = in_shape
         transition_shape = (*batch, height//2**5, width//2**5, 512)
@@ -118,7 +118,7 @@ class Vgg16(_VggBase):
         super().__init__(cnn, dense, output)
 
 
-class Vgg19(_VggBase):
+class VGG19(_VGGBase):
     def __init__(self, in_shape, out_shape, **kwargs):
         (*batch, height, width, in_channels) = in_shape
         transition_shape = (*batch, height//2**5, width//2**5, 512)
