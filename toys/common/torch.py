@@ -12,13 +12,15 @@ from toys.estimator import Model
 class TorchModel(Model):
     '''A wrapper around PyTorch modules.
 
-    This wrapper extends `torch.Module` to accept scalars, numpy arrays, and
+    This wrapper extends `torch.nn.Module` to accept scalars, numpy arrays, and
     torch tensors as input and to return numpy arrays as output.
 
     A `TorchModel` is aware of the number of dimensions expected for each
     input. If an input has fewer dimensions, trivial axes are added.
 
-    A `TorchModel` is NOT a `torch.Module`. Gradients are never computed.
+    ..note:
+        A `TorchModel` is NOT a `torch.nn.Module`. Backprop graphs are not
+        created during prediction.
 
     Attributes:
         module (Module):
@@ -78,8 +80,8 @@ class TorchModel(Model):
             x = x.to(device, dtype)
 
             if self.dims and self.dims[i]:
-                assert x.dim() <= n_dims
-                for _ in range(x.dim(), n_dims):
+                assert x.dim() <= self.dims[i]
+                for _ in range(x.dim(), self.dims[i]):
                     x = x.unsqueeze_(0)
 
             yield x
