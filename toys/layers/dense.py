@@ -7,7 +7,6 @@ from torch import Tensor
 from torch import nn
 
 import toys
-from toys import current_context
 from toys.parsers import parse_activation, parse_initializer
 
 
