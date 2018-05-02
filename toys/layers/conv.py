@@ -91,16 +91,6 @@ class Conv2d(nn.Module):
         else:
             pooling_layer = pooling()
 
-        # This layer accepts NHWC but torch expects NCHW. In the forward pass,
-        # we transpose C and H. This puts H and W out of order (NCWH), so we
-        # transpose the kernel rather than adding more transpose ops to forward.
-        if isinstance(kernel_size, Sequence):
-            (height, width) = kernel_size
-            kernel_size = (width, height)
-        if isinstance(stride, Sequence):
-            (height, width) = stride
-            stride = (width, height)
-
         layers = []
         prev = in_channels
         for c in channels:
@@ -119,11 +109,11 @@ class Conv2d(nn.Module):
     def forward(self, x):
         (*batch, height, width, channels) = x.shape
         x = x.view(-1, height, width, channels)
-        x = x.transpose(-1, -3)
+        x = torch.einsum('nhwc->nchw', [x])
         for layer in self.layers:
             x = layer(x)
             x = self.actv(x)
-        x = x.transpose(-3, -1)
+        x = torch.einsum('nchw->nhwc', [x])
         x = x.view(*batch, height, width, -1)
         x = self.pooling(x)
         return x
