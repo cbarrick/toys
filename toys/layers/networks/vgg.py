@@ -1,6 +1,10 @@
-from .conv import Conv2d
-from .dense import Dense
-from .pool import MaxPool2d
+import torch
+from torch import nn
+
+import toys
+from toys.layers import Conv2d
+from toys.layers import Dense
+from toys.layers import MaxPool2d
 
 
 def parse_args(kwargs):
