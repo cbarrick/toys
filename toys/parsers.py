@@ -104,6 +104,8 @@ def parse_dtype(dtype):
     if isinstance(dtype, torch.dtype):
         return dtype
 
+    if dtype is None: return torch.get_default_dtype()
+
     if dtype == 'half': return torch.half
     if dtype == 'float': return torch.float
     if dtype == 'double': return torch.double

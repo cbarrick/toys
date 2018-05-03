@@ -77,8 +77,8 @@ class GradientDescent(Estimator):
                 Cast the module to this data type. This can be a PyTorch tensor
                 class, a conventional name like 'float' and 'double', or an
                 explicit name like 'float32' and 'float64'. The default is
-                determined by ``torch.Tensor`` and may be overridden with
-                ``torch.set_default_tensor_type``.
+                determined by `torch.get_default_dtype` and may be set with
+                `torch.set_default_dtype`.
             **kwargs:
                 Additional keyword arguments are forwarded to the module
                 constructor.
