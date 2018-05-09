@@ -25,15 +25,14 @@ class Accumulator(Protocol):
 
 
 class Sum(Accumulator):
-    def __init__(self, **kwargs):
-        self.kwargs = kwargs
+    def __init__(self):
         self.val = 0
 
     def accumulate(self, batch):
         try:
-            self.val += batch.sum(**self.kwargs)
-        except (TypeError, AttributeError):
-            self.val += batch
+            self.val += batch.sum(axis=0)
+        except AttributeError:
+            self.val += sum(batch)
 
     def reduce(self):
         val = self.val
@@ -42,8 +41,7 @@ class Sum(Accumulator):
 
 
 class Mean(Accumulator):
-    def __init__(self, fn=None, **kwargs):
-        self.kwargs = kwargs
+    def __init__(self, fn=None):
         self.fn = fn
         self.n = 0
         self.val = 0
@@ -52,20 +50,21 @@ class Mean(Accumulator):
         if self.fn is not None:
             batch = self.fn(batch)
 
-        if hasattr(batch, 'mean'):
-            n = len(batch)
-            val = batch.mean(**self.kwargs)
-        elif hasattr(batch, 'double'):
-            n = len(batch)
-            val = batch.double().mean(**self.kwargs)
-        else:
-            n = 1
-            val = batch
+        n = len(batch)
 
+        try:
+            val = batch.mean(axis=0)
+        except (AttributeError, RuntimeError):
+            # Torch throws RuntimeError when tensors do not implement `mean`.
+            # WARNING: The naive mean formula is unstable. The assumption is
+            # that the batch is small enough to avoid stability issues.
+            val = sum(batch) / n
+
+        # Update the global mean with Chan's algorithm, which is stable:
+        # https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Parallel_algorithm
         if self.n == 0:
             self.n = n
             self.val = val
-
         else:
             delta = val - self.val
             self.n += n

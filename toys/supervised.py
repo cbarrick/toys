@@ -109,7 +109,7 @@ class GradientDescent(BaseEstimator):
             loss = loss.mean()
             loss.backward()
             opt.step()
-            return float(loss)
+            return loss.detach()
 
         # Perform one epoch of gradient descent.
         def train_epoch():
@@ -119,7 +119,7 @@ class GradientDescent(BaseEstimator):
             for i, batch in enumerate(train_set):
                 progress(f'[{i/n:.2%}]')
                 j = partial_fit(batch)
-                train_loss.accumulate(j)
+                train_loss.accumulate([j])
             return train_loss.reduce()
 
         # Compute the loss of the validation set, if given.
