@@ -7,7 +7,7 @@ import torch
 from torch import multiprocessing as mp
 
 import toys
-from toys.common import BaseEstimator, Estimator, Model
+from toys.common import BaseEstimator, Estimator, Model, TunedEstimator
 from toys.dataset.utils import Subset
 from toys.metrics import Accumulator
 
@@ -46,33 +46,6 @@ def search_param_grid(grid):
     else:
         for g in grid:
             yield from search_param_grid(g)
-
-
-class TunedEstimator(BaseEstimator):
-    '''An estimator whose default hyperparameters have been tuned by by a
-    meta-estimator, like `GridSearchCV`.
-
-    A `TunedEstimator` wraps an underlying estimator together with a set of
-    default hyperparameters.
-
-    Attributes:
-        estimator (Estimator):
-            The underlying estimator.
-        params (Dict[str, Any]):
-            The best hyperparameters found by the parameter search.
-        cv_results (Dict[str, Any] or None):
-            Overall results of the search which generated this estimator.
-    '''
-    def __init__(self, estimator, params, cv_results=None):
-        super.__init__()
-        self.estimator = estimator
-        self.params = dict(best_params)
-        self.cv_results = dict(cv_results or {})
-
-    def fit(self, dataset, **hyperparams):
-        params = {**self.params, **hyperparams}
-        model = estimator(dataset, **params)
-        return model
 
 
 class GridSearchCV(BaseEstimator):

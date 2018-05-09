@@ -74,6 +74,32 @@ class BaseEstimator(ABC):
         raise NotImplementedError()
 
 
+class TunedEstimator(BaseEstimator):
+    '''A wrapper to override the default hyperparameters of an estimator.
+
+    The new hyperparameters supplied by a `TunedEstimator`s are often learned
+    by a meta-estimator, like `toys.model_selection.GridSearchCV`.
+
+    Attributes:
+        estimator (Estimator):
+            The underlying estimator.
+        params (Dict[str, Any]):
+            The best hyperparameters found by the parameter search.
+        cv_results (Dict[str, Any] or None):
+            Overall results of the search which generated this estimator.
+    '''
+    def __init__(self, estimator, params, cv_results=None):
+        super.__init__()
+        self.estimator = estimator
+        self.params = dict(best_params)
+        self.cv_results = dict(cv_results or {})
+
+    def fit(self, dataset, **hyperparams):
+        params = {**self.params, **hyperparams}
+        model = estimator(dataset, **params)
+        return model
+
+
 class TorchModel(Model):
     '''A wrapper around PyTorch modules.
 
