@@ -1,6 +1,9 @@
 import torch
 from torch import nn, optim
 
+import toys
+from toys import metrics
+
 
 def parse_str(s):
     kwargs = {}
@@ -131,3 +134,26 @@ def parse_dtype(dtype):
     if dtype == 'int64': return torch.int64
 
     raise ValueError(f'unknown dtype {repr(dtype)}')
+
+
+def parse_metric(metric):
+    if isinstance(metric, metrics.Accumulator):
+        return metric
+
+    metric, kwargs = parse_str(metric)
+
+    if metric == 'accuracy': return metrics.Accuracy(**kwargs)
+    if metric == 'true_positives': return metrics.TruePositives(**kwargs)
+    if metric == 'false_positives': return metrics.FalsePositives(**kwargs)
+    if metric == 'true_negatives': return metrics.TrueNegatives(**kwargs)
+    if metric == 'false_negatives': return metrics.FalseNegatives(**kwargs)
+    if metric == 'precision': return metrics.Precision(**kwargs)
+    if metric == 'recall': return metrics.Recall(**kwargs)
+    if metric == 'f_score': return metrics.FScore(**kwargs)
+    if metric == 'mean_squared_error': return metrics.MeanSquaredError(**kwargs)
+    if metric == 'negative_mean_squared_error': return metrics.NegMeanSquaredError(**kwargs)
+
+    if metric == 'mse': return metrics.MeanSquaredError(**kwargs)
+    if metric == 'negative_mse': return metrics.NegMeanSquaredError(**kwargs)
+
+    raise ValueError(f'unknown metric {repr(metric)}')

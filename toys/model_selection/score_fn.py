@@ -3,6 +3,7 @@ from typing import Callable, Tuple, Union
 import toys
 from toys.datasets.utils import Dataset, DataLoader
 from toys.metrics import Accumulator, NegMeanSquaredError
+from toys.parsers import parse_metric
 
 
 ScoreFn = Callable[..., Union[float, Tuple[float, ...]]]
@@ -55,6 +56,8 @@ def supervised_score(metric, **kwargs):
     elif isinstance(metric, Accumulator):
         metric = (metric,)
 
+    metric = [parse_metric(m) for m in metric]
+
     def score(model, *datasets):
         loader = DataLoader(*datasets, **kwargs)
         for *inputs, target in loader:
@@ -96,6 +99,8 @@ def unsupervised_score(metric, **kwargs):
         raise NotImplementedError('TODO: Pick a default metric for unsupervised_score')
     elif isinstance(metric, Accumulator):
         metric = (metric,)
+
+    metric = [parse_metric(m) for m in metric]
 
     def score(model, *datasets):
         loader = DataLoader(*datasets, **kwargs)
