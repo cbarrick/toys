@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from logging import getLogger
 from pathlib import Path
 
 import numpy as np
@@ -6,6 +7,9 @@ import torch
 
 import toys
 from toys.datasets.utils import Dataset
+
+
+logger = getLogger(__name__)
 
 
 class _CIFAR(Dataset, ABC):
@@ -31,11 +35,17 @@ class _CIFAR(Dataset, ABC):
         self.base_path = Path(base_path)
         self.test = test
 
+        name = f"{self.__class__.__name__} {'test' if test else 'train'} set"
+
         if prefetch:
+            logger.info(f'prefetching {name}')
             data, labels = self._read_all_from_disk()
             self.data = data
             self.labels = labels
+            logger.info(f'prefetching {name} complete')
+
         else:
+            logger.info(f'streaming {name}')
             self.data = None
             self.labels = None
 
