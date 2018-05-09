@@ -29,8 +29,8 @@ class Subset(Dataset):
             The indices of elements contained in this subset.
     '''
     def __init__(self, dataset, indices):
-        assert 0 < max(indices) < len(dataset)
-        assert 0 < min(indices) < len(dataset)
+        assert 0 <= max(indices) < len(dataset)
+        assert 0 <= min(indices) < len(dataset)
         self.dataset = dataset
         self.indices = indices
 
