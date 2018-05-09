@@ -103,13 +103,9 @@ class GradientDescent(BaseEstimator):
         # Perform one iteration of gradient descent.
         def partial_fit(batch):
             opt.zero_grad()
-            if unsupervised:
-                prediction = mod(*batch)
-                loss = loss_fn(prediction)
-            else:
-                *inputs, target = batch
-                prediction = mod(*inputs)
-                loss = loss_fn(prediction, target)
+            *inputs, target = batch
+            prediction = mod(*inputs)
+            loss = loss_fn(prediction, target)
             loss.backward()
             opt.step()
             return loss.detach()
