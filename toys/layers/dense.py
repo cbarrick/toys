@@ -46,20 +46,15 @@ class Dense(nn.Module):
         init = kwargs.get('initializer', 'kaiming_uniform')
         bias_init = kwargs.get('bias_initializer', 'constant:val=0')
 
+        actv = parse_activation(actv)
+        init = parse_initializer(init)
+        bias_init = parse_initializer(bias_init)
+
         if not isinstance(in_shape, Sequence):
             in_shape = (in_shape,)
 
         if not isinstance(out_shape, Sequence):
             out_shape = (out_shape,)
-
-        if isinstance(actv, str):
-            actv = parse_activation(actv)
-
-        if isinstance(init, str):
-            init = parse_initializer(init)
-
-        if isinstance(bias_init, str):
-            bias_init = parse_initializer(bias_init)
 
         layers = []
         prev = in_shape

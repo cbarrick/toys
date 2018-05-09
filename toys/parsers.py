@@ -16,6 +16,9 @@ def parse_str(s):
 
 
 def parse_activation(act):
+    if act is None:
+        return lambda x: x
+
     act, kwargs = parse_str(act)
 
     if act == 'sigmoid': return nn.Sigmoid(**kwargs)
@@ -41,6 +44,9 @@ def parse_activation(act):
 
 
 def parse_initializer(init):
+    if init is None:
+        init = 'xavier'
+
     init, kwargs = parse_str(init)
 
     if init == 'uniform': return lambda x: nn.init.uniform_(x, **kwargs)

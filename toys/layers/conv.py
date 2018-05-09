@@ -67,17 +67,12 @@ class Conv2d(nn.Module):
         init = kwargs.get('initializer', 'kaiming_uniform')
         bias_init = kwargs.get('bias_initializer', 'constant:val=0')
 
+        actv = parse_activation(actv)
+        init = parse_initializer(init)
+        bias_init = parse_initializer(bias_init)
+
         assert 0 < len(channels)
         assert 0 < stride
-
-        if isinstance(actv, str):
-            actv = parse_activation(actv)
-
-        if isinstance(init, str):
-            init = parse_initializer(init)
-
-        if isinstance(bias_init, str):
-            bias_init = parse_initializer(bias_init)
 
         if 0 < stride < 1:
             stride = int(1/stride)
