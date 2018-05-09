@@ -36,6 +36,8 @@ class Dense(nn.Module):
                 An initializer function for the bias.
                 Default: ``'constant:val=0'``.
         '''
+        super().__init__()
+
         assert 0 < len(shapes)
         out_shape = shapes[-1]
 
@@ -78,7 +80,7 @@ class Dense(nn.Module):
     def forward(self, x):
         x = x.view(-1, self._in_flat)
         for layer in self.layers:
-            x = self.linear(x)
+            x = layer(x)
             x = self.actv(x)
         x = x.view(-1, *self._out_shape)
         return x

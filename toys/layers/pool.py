@@ -6,6 +6,7 @@ from torch import nn
 
 class MaxPool2d(nn.Module):
     def __init__(self, kernel_size, **kwargs):
+        super().__init__()
         stride = kwargs.get('stride', kernel_size)
         padding = kwargs.get('padding', 0)
         dilation = kwargs.get('dilation', 1)
@@ -16,7 +17,7 @@ class MaxPool2d(nn.Module):
             stride=stride, padding=padding, dilation=dilation,
             return_indices=return_indices, ceil_mode=ceil_mode)
 
-    def forward(x):
+    def forward(self, x):
         (*batch, height, width, channels) = x.shape
         x = x.view(-1, height, width, channels)
         x = torch.einsum('nhwc->nchw', [x])

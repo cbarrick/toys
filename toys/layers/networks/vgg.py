@@ -60,13 +60,13 @@ class VGG11(_VGGBase):
 
         # Max pooling is automatically applied at the end of each conv layer.
         # Use the `pooling` keyword argument to override.
-        cnn = nn.Sequential([
+        cnn = nn.Sequential(
             Conv(in_channels, 64, **conv_args),
             Conv(64, 128, **conv_args),
-            Conv(128, 256, 256 **conv_args),
+            Conv(128, 256, 256, **conv_args),
             Conv(256, 512, 512, **conv_args),
-            Conv(256, 512, 512, **conv_args),
-        ])
+            Conv(512, 512, 512, **conv_args),
+        )
 
         dense = Dense(transition_shape, 4096, 4096, **dense_args)
         output = Dense(4096, out_shape, **output_args)
@@ -84,13 +84,13 @@ class VGG13(_VGGBase):
 
         # Max pooling is automatically applied at the end of each conv layer.
         # Use the `pooling` keyword argument to override.
-        cnn = nn.Sequential([
+        cnn = nn.Sequential(
             Conv(in_channels, 64, 64, **conv_args),
             Conv(64, 128, 128, **conv_args),
             Conv(128, 256, 256, **conv_args),
             Conv(256, 512, 512, **conv_args),
-            Conv(256, 512, 512, **conv_args),
-        ])
+            Conv(512, 512, 512, **conv_args),
+        )
 
         dense = Dense(transition_shape, 4096, 4096, **dense_args)
         output = Dense(4096, out_shape, **output_args)
@@ -108,13 +108,13 @@ class VGG16(_VGGBase):
 
         # Max pooling is automatically applied at the end of each conv layer.
         # Use the `pooling` keyword argument to override.
-        cnn = nn.Sequential([
+        cnn = nn.Sequential(
             Conv(in_channels, 64, 64, **conv_args),
             Conv(64, 128, 128, **conv_args),
             Conv(128, 256, 256, 256, **conv_args),
             Conv(256, 512, 512, 512 **conv_args),
-            Conv(256, 512, 512, 512, **conv_args),
-        ])
+            Conv(512, 512, 512, 512, **conv_args),
+        )
 
         dense = Dense(transition_shape, 4096, 4096, **dense_args)
         output = Dense(4096, out_shape, **output_args)
@@ -132,13 +132,13 @@ class VGG19(_VGGBase):
 
         # Max pooling is automatically applied at the end of each conv layer.
         # Use the `pooling` keyword argument to override.
-        cnn = nn.Sequential([
+        cnn = nn.Sequential(
             Conv(in_channels, 64, 64, **conv_args),
             Conv(64, 128, 128, **conv_args),
             Conv(128, 256, 256, 256, 256, **conv_args),
             Conv(256, 512, 512, 512, 512, **conv_args),
-            Conv(256, 512, 512, 512, 512, **conv_args),
-        ])
+            Conv(512, 512, 512, 512, 512, **conv_args),
+        )
 
         dense = Dense(transition_shape, 4096, 4096, **dense_args)
         output = Dense(4096, out_shape, **output_args)

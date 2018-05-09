@@ -53,6 +53,8 @@ class Conv2d(nn.Module):
                 An initializer function for the bias.
                 Default: ``'constant:val=0'``.
         '''
+        super().__init__()
+
         kernel_size = kwargs.get('kernel_size', 3)
         stride = kwargs.get('stride', 1)
         padding = kwargs.get('padding', 0)
@@ -101,7 +103,7 @@ class Conv2d(nn.Module):
             layers.append(conv)
             prev = c
 
-        self.layer = nn.ModuleList(layers)
+        self.layers = nn.ModuleList(layers)
         self.actv = actv
         self.pooling = pooling_layer
 
