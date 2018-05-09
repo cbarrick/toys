@@ -10,3 +10,5 @@ from .supervised import FalseNegatives
 from .supervised import Precision
 from .supervised import Recall
 from .supervised import FScore
+from .supervised import MeanSquaredError
+from .supervised import NegMeanSquaredError

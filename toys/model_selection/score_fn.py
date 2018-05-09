@@ -2,9 +2,7 @@ from typing import Callable, Tuple, Union
 
 import toys
 from toys.datasets.utils import Dataset, DataLoader
-
-from .common import Accumulator
-from .supervised import NegMeanSquaredError
+from toys.metrics import Accumulator, NegMeanSquaredError
 
 
 ScoreFn = Callable[..., Union[float, Tuple[float, ...]]]

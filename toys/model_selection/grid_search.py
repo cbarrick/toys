@@ -8,7 +8,7 @@ from torch import multiprocessing as mp
 
 import toys
 from toys.common import BaseEstimator, Estimator, Model, TunedEstimator
-from toys.dataset.utils import Subset
+from toys.datasets.utils import Subset
 from toys.metrics import Accumulator
 
 from .cross_val import k_fold, CrossValSplitter
