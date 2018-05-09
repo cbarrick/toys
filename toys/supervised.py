@@ -15,7 +15,8 @@ class GradientDescent(BaseEstimator):
     '''A supervised stochastic gradient descent estimator for PyTorch modules.
     '''
     def fit(self, dataset, *, module=None, loss_fn='mse', optimizer='SGD:lr=1e-4', max_epochs=100,
-            batch_size=1, device_ids=None, stop_policy=None, patience=-1, dtype=None, **kwargs):
+            batch_size=1, device_ids=None, stop_policy=None, patience=-1, dtype=None, dry_run=False,
+            **kwargs):
         '''Trains a TorchModel.
 
         Users should not call this method directly, but instead call the
@@ -70,6 +71,8 @@ class GradientDescent(BaseEstimator):
                 explicit name like 'float32' and 'float64'. The default is
                 determined by `torch.get_default_dtype` and may be set with
                 `torch.set_default_dtype`.
+            dry_run (bool):
+                If true, break from loops early. Useful for debugging.
             **kwargs:
                 Additional keyword arguments are forwarded to the module
                 constructor.
@@ -120,6 +123,7 @@ class GradientDescent(BaseEstimator):
                 progress(f'[{i/n:.2%}]')
                 j = partial_fit(batch)
                 train_loss.accumulate([j])
+                if dry_run: break
             return train_loss.reduce()
 
         # Compute the loss of the validation set, if given.
@@ -152,6 +156,7 @@ class GradientDescent(BaseEstimator):
             val_loss = validate() or train_loss
             report(epoch, val_loss)
             if stop(val_loss): break
+            if dry_run: break
 
         mod = mod.module  # Unwrap from DataParallel.
         mod = mod.eval()  # Exit training mode.
