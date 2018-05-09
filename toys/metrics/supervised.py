@@ -1,5 +1,7 @@
 from sys import float_info
 
+import numpy as np
+
 from .core import Accumulator, Mean, Sum
 
 
@@ -13,8 +15,9 @@ class Accuracy(Accumulator):
         self.val = Mean(**kwargs)
 
     def accumulate(self, y, h):
+        y = np.asarray(y)
+        h = np.asarray(h)
         val = (y == h)
-        val = val.long()
         self.val.accumulate(val)
 
     def reduce(self):
@@ -27,8 +30,9 @@ class TruePositives(Accumulator):
         self.val = Sum(**kwargs)
 
     def accumulate(self, y, h):
+        y = np.asarray(y)
+        h = np.asarray(h)
         val = (h == self.target) & (y == self.target)
-        val = val.long()
         self.val.accumulate(val)
 
     def reduce(self):
@@ -41,8 +45,9 @@ class FalsePositives(Accumulator):
         self.val = Sum(**kwargs)
 
     def accumulate(self, y, h):
+        y = np.asarray(y)
+        h = np.asarray(h)
         val = (h == self.target) & (y != self.target)
-        val = val.long()
         self.val.accumulate(val)
 
     def reduce(self):
@@ -55,8 +60,9 @@ class TrueNegatives(Accumulator):
         self.val = Sum(**kwargs)
 
     def accumulate(self, y, h):
+        y = np.asarray(y)
+        h = np.asarray(h)
         val = (h != self.target) & (y != self.target)
-        val = val.long()
         self.val.accumulate(val)
 
     def reduce(self):
@@ -69,8 +75,9 @@ class FalseNegatives(Accumulator):
         self.val = Sum(**kwargs)
 
     def accumulate(self, y, h):
+        y = np.asarray(y)
+        h = np.asarray(h)
         val = (h != self.target) & (y == self.target)
-        val = val.long()
         self.val.accumulate(val)
 
     def reduce(self):
@@ -83,6 +90,8 @@ class Precision(Accumulator):
         self.fp = FalsePositives(target, **kwargs)
 
     def accumulate(self, y, h):
+        y = np.asarray(y)
+        h = np.asarray(h)
         self.tp.accumulate(y, h)
         self.fp.accumulate(y, h)
 
@@ -98,6 +107,8 @@ class Recall(Accumulator):
         self.fn = FalseNegatives(target, **kwargs)
 
     def accumulate(self, y, h):
+        y = np.asarray(y)
+        h = np.asarray(h)
         self.tp.accumulate(y, h)
         self.fn.accumulate(y, h)
 
@@ -115,6 +126,8 @@ class FScore(Accumulator):
         self.fn = FalseNegatives(target, **kwargs)
 
     def accumulate(self, y, h):
+        y = np.asarray(y)
+        h = np.asarray(h)
         self.tp.accumulate(y, h)
         self.fp.accumulate(y, h)
         self.fn.accumulate(y, h)
@@ -134,6 +147,8 @@ class MeanSquaredError(Accumulator):
         self.mean = Mean(**kwargs)
 
     def accumulate(self, y, h):
+        y = np.asarray(y)
+        h = np.asarray(h)
         err = (y - h) ** 2
         self.mean.accumulate(err)
 
@@ -146,6 +161,8 @@ class NegMeanSquaredError(Accumulator):
         self.mean = Mean(**kwargs)
 
     def accumulate(self, y, h):
+        y = np.asarray(y)
+        h = np.asarray(h)
         err = (y - h) ** 2
         self.mean.accumulate(err)
 
