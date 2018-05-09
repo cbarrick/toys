@@ -89,7 +89,7 @@ class GradientDescent(BaseEstimator):
         loss_fn = parse_loss(loss_fn)
         dtype = parse_dtype(dtype)
 
-        mod = self.module(**kwargs)
+        mod = module(**kwargs)
         mod = mod.to(dtype).train()
         mod = DataParallel(mod, device_ids)
         opt = optimizer(mod.parameters())
