@@ -106,9 +106,10 @@ class GradientDescent(BaseEstimator):
             *inputs, target = batch
             prediction = mod(*inputs)
             loss = loss_fn(prediction, target)
+            loss = loss.mean()
             loss.backward()
             opt.step()
-            return loss.detach()
+            return float(loss)
 
         # Perform one epoch of gradient descent.
         def train_epoch():
