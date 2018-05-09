@@ -23,5 +23,7 @@ class MaxPool2d(nn.Module):
         x = torch.einsum('nhwc->nchw', [x])
         x = self.pool(x)
         x = torch.einsum('nchw->nhwc', [x])
-        x = x.view(*batch, height, width, -1)
+        (_, new_height, new_width, _) = x.shape
+        x = x.contiguous()
+        x = x.view(*batch, new_height, new_width, channels)
         return x
