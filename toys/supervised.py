@@ -164,6 +164,6 @@ class GradientDescent(BaseEstimator):
 
         *proto_inputs, proto_target = dataset[0]
         shapes = (x.shape for x in proto_inputs)
-        dims = [len(s) for s in shapes]
+        dims = tuple(len(s) for s in shapes)
 
-        return TorchModel(mod, dims)
+        return TorchModel(mod, dtype=dtype, *dims)

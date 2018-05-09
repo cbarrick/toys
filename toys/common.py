@@ -8,6 +8,7 @@ from torch.nn import Module
 
 import toys
 from toys.datasets.utils import Dataset
+from toys.parsers import parse_dtype
 
 
 Model = Callable
@@ -112,32 +113,28 @@ class TorchModel(Model):
     ..note:
         A `TorchModel` is NOT a `torch.nn.Module`. Backprop graphs are not
         created during prediction.
-
-    Attributes:
-        module (Module):
-            The module being wrapped.
-        dims (Tuple[int or None] or None):
-            The number of dimensions required of each input. If present,
-            the number and order of dimensions must match the number and
-            order of inputs expected by the module. A value of ``None``
-            means any shape is allowed for the corresponding input. If not
-            present, the number and shape of inputs is unconstrained.
     '''
 
-    def __init__(self, module, *dims):
+    def __init__(self, module, device='cpu', dtype='float32', *dims):
         '''Construct a `TorchModel`.
 
         Arguments:
             module (Module):
                 The module being wrapped.
-            dims (int or None):
+            device (str or torch.device):
+                The device on which to execute the model.
+            dtype (str or torch.dtype):
+                The dtype to which the module and inputs are cast.
+            dims (Sequence[int or None] or None):
                 The number of dimensions required of each input. If present,
                 the number and order of dimensions must match the number and
                 order of inputs expected by the module. A value of ``None``
                 means any shape is allowed for the corresponding input. If not
                 present, the number and shape of inputs is unconstrained.
         '''
-        self.module = module
+        self.device = torch.device(device)
+        self.dtype = parse_dtype(dtype)
+        self.module = module.to(self.device, self.dtype)
         self.dims = dims or None
 
     def __getattr__(self, name):
@@ -158,8 +155,6 @@ class TorchModel(Model):
         '''Cast inputs to tensors of the expected dtype, device, and dimension.
         '''
         assert self.dims is None or len(inputs) == len(self.dims)
-        dtype = self.module.dtype
-        device = self.module.device
 
         for i, x in enumerate(inputs):
             if np.isscalar(x):
@@ -168,7 +163,7 @@ class TorchModel(Model):
             if isinstance(x, np.ndarray):
                 x = torch.from_numpy(x)
 
-            x = x.to(device, dtype)
+            x = x.to(self.device, self.dtype)
 
             if self.dims and self.dims[i]:
                 assert x.dim() <= self.dims[i]
