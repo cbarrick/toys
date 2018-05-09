@@ -15,8 +15,8 @@ class GradientDescent(BaseEstimator):
     '''A supervised stochastic gradient descent estimator for PyTorch modules.
     '''
     def fit(self, dataset, *, module=None, loss_fn='mse', optimizer='SGD:lr=1e-4', max_epochs=100,
-            batch_size=1, device_ids=None, stop_policy=None, patience=-1, dtype=None, dry_run=False,
-            **kwargs):
+            batch_size=1, device_ids=None, stop_policy=None, patience=-1, dtype=None,
+            classifier=True, dry_run=False, **kwargs):
         '''Trains a TorchModel.
 
         Users should not call this method directly, but instead call the
@@ -71,6 +71,9 @@ class GradientDescent(BaseEstimator):
                 explicit name like 'float32' and 'float64'. The default is
                 determined by `torch.get_default_dtype` and may be set with
                 `torch.set_default_dtype`.
+            classifier (bool):
+                If true, the resulting model is a classifier.
+                See `toys.TorchModel` for more information.
             dry_run (bool):
                 If true, break from loops early. Useful for debugging.
             **kwargs:
@@ -166,4 +169,4 @@ class GradientDescent(BaseEstimator):
         shapes = (x.shape for x in proto_inputs)
         dims = tuple(len(s) for s in shapes)
 
-        return TorchModel(mod, dtype=dtype, dims=dims)
+        return TorchModel(mod, classifier=classifier, dtype=dtype, dims=dims)

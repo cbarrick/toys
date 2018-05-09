@@ -115,12 +115,15 @@ class TorchModel(Model):
         created during prediction.
     '''
 
-    def __init__(self, module, device='cpu', dtype='float32', dims=None):
+    def __init__(self, module, classifier=False, device='cpu', dtype='float32', dims=None):
         '''Construct a `TorchModel`.
 
         Arguments:
             module (Module):
                 The module being wrapped.
+            classifier (bool):
+                If true, the model returns the argmax of the module's
+                prediction along axis 1.
             device (str or torch.device):
                 The device on which to execute the model.
             dtype (str or torch.dtype):
@@ -133,6 +136,7 @@ class TorchModel(Model):
                 present, the number and shape of inputs is unconstrained. Do
                 not include the batch dimension.
         '''
+        self.classifier = classifier
         self.device = torch.device(device)
         self.dtype = parse_dtype(dtype)
         self.module = module.to(self.device, self.dtype)
@@ -150,6 +154,8 @@ class TorchModel(Model):
             inputs = self._cast_inputs(*inputs)
             y = self.module(*inputs)
             y = y.numpy()
+            if self.classifier:
+                y = y.argmax(axis=1)
             return y
 
     def _cast_inputs(self, *inputs):
