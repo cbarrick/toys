@@ -7,8 +7,8 @@ import torch
 from torch import multiprocessing as mp
 
 import toys
-from toys.estimator import Estimator, Model
-from toys.datasets.utils import Zip, Subset
+from toys.estimator import BaseEstimator, Estimator, Model
+from toys.dataset.utils import Subset
 from toys.metrics import Accumulator, ScoreFn, supervised_score, unsupervised_score
 
 from .cross_val import k_fold, CrossValSplitter
@@ -47,7 +47,7 @@ def search_param_grid(grid):
             yield from search_param_grid(g)
 
 
-class TunedEstimator(Estimator):
+class TunedEstimator(BaseEstimator):
     '''An estimator whose default hyperparameters have been tuned by by a
     meta-estimator, like `GridSearchCV`.
 
@@ -68,26 +68,27 @@ class TunedEstimator(Estimator):
         self.params = dict(best_params)
         self.cv_results = dict(cv_results or {})
 
-    def fit(self, *datasets, **hyperparams):
+    def fit(self, dataset, **hyperparams):
         params = {**self.params, **hyperparams}
-        model = estimator(*datasets, **params)
+        model = estimator(dataset, **params)
         return model
 
 
-class GridSearchCV(Estimator):
-    def fit(self, *datasets, estimator=None, param_grid=None, cv=3,
+class GridSearchCV(BaseEstimator):
+    def fit(self, dataset, *, estimator=None, param_grid=None, cv=3,
             metric=None, score_fn='supervised', n_jobs=0):
         '''Search for the best parameters of an model.
 
         Arguments:
-            *datasets (Sequence[Dataset]):
-                The datasets to which the estimator is fit.
+            dataset (Sequence[Dataset]):
+                The dataset to fit.
 
         Keyword Arguments:
             estimator (Estimator or None):
-                The estimator which fits the model. The estimator be specified
-                either when constructing or calling the `GridSearchCV` and
-                MUST NOT be None. (Though None will successfully typecheck.)
+                The inner estimator which fits the model. The inner estimator
+                may be specified either when constructing or calling this
+                estimator and MUST NOT be None. (Though None will successfully
+                typecheck.)
             param_grid (ParamGrid or Iterable[ParamGrid] or None):
                 A mapping from parameter names to sequence of allowed values,
                 or an iterable of such grids. A value of None will fit a
@@ -129,8 +130,6 @@ class GridSearchCV(Estimator):
         Todo:
             - Use a global scope for kwargs to the default score functions.
         '''
-        assert 0 < len(datasets)
-
         if estimator is None:
             msg = 'Estimator must not be None.'
             msg += ' The `estimator` argument must be specified when'
@@ -155,15 +154,15 @@ class GridSearchCV(Estimator):
 
         def jobs():
             for params in search_param_grid(param_grid):
-                for train, test in cv(Zip(*datasets)):
-                    train_sets = (Subset(d, train) for d in datasets)
-                    test_sets = (Subset(d, test) for d in datasets)
-                    yield params, train_sets, test_sets
+                for train, test in cv(dataset):
+                    train_set = Subset(dataset, train)
+                    test_set = Subset(dataset, test)
+                    yield params, train_set, test_set
 
         def score(job):
-            (params, train_sets, test_sets) = job
-            model = estimator(*train_sets, **params)
-            score = score_fn(model, *test_sets)
+            (params, train_set, test_set) = job
+            model = estimator(train_set, **params)
+            score = score_fn(model, test_set)
             params = tuple(params.items())
             if not isinstance(score, tuple): score = (score,)
             return (params, score)
