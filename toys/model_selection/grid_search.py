@@ -1,3 +1,4 @@
+from logging import getLogger
 from typing import Any, Callable, Dict, Sequence, Mapping
 from itertools import groupby
 
@@ -13,6 +14,9 @@ from toys.metrics import Accumulator
 
 from .cross_val import k_fold, CrossValSplitter
 from .score_fn import ScoreFn, supervised_score, unsupervised_score
+
+
+logger = getLogger(__name__)
 
 
 ParamGrid = Mapping[str, Sequence]
@@ -158,6 +162,7 @@ class GridSearchCV(BaseEstimator):
             # protected with ``if __name__ == '__main__': ...``.
             # WARNING: Windows doesn't have process forking.
             # WARNING: Safely forking a multithreaded process is problematic.
+            logger.warn('multiprocessing is not fully supported')
             ctx = mp.get_context('fork')
             pool = ctx.Pool(n_jobs)
             scores = pool.imap(score, jobs())

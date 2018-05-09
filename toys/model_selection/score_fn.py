@@ -56,7 +56,6 @@ def supervised_score(metric, **kwargs):
         metric = (metric,)
 
     def score(model, *datasets):
-        assert 1 < len(datasets)
         loader = DataLoader(*datasets, **kwargs)
         for *inputs, target in loader:
             prediction = model(*inputs)
