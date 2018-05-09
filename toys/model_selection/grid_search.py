@@ -153,7 +153,12 @@ class GridSearchCV(BaseEstimator):
         if n_jobs == 0:
             scores = (score(j) for j in jobs())
         else:
-            ctx = mp.get_context('forkserver')
+            # The 'fork' start method is required so that user scripts can
+            # execute experiments at the top level. Otherwise they must be
+            # protected with ``if __name__ == '__main__': ...``.
+            # WARNING: Windows doesn't have process forking.
+            # WARNING: Safely forking a multithreaded process is problematic.
+            ctx = mp.get_context('fork')
             pool = ctx.Pool(n_jobs)
             scores = pool.imap(score, jobs())
             pool.close()
