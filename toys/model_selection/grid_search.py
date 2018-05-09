@@ -9,9 +9,10 @@ from torch import multiprocessing as mp
 import toys
 from toys.common import BaseEstimator, Estimator, Model
 from toys.dataset.utils import Subset
-from toys.metrics import Accumulator, ScoreFn, supervised_score, unsupervised_score
+from toys.metrics import Accumulator
 
 from .cross_val import k_fold, CrossValSplitter
+from .score_fn import ScoreFn, supervised_score, unsupervised_score
 
 
 ParamGrid = Mapping[str, Sequence]
