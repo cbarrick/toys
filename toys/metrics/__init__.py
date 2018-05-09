@@ -1,6 +1,6 @@
-from .common import Accumulator
-from .common import Mean
-from .common import Sum
+from .core import Accumulator
+from .core import Mean
+from .core import Sum
 
 from .supervised import Accuracy
 from .supervised import TruePositives

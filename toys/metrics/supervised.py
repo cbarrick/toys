@@ -1,6 +1,6 @@
 from sys import float_info
 
-from .common import Accumulator, Mean, Sum
+from .core import Accumulator, Mean, Sum
 
 
 # Use epsilon only to prevent ZeroDivisionError.
