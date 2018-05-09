@@ -115,7 +115,7 @@ class TorchModel(Model):
         created during prediction.
     '''
 
-    def __init__(self, module, device='cpu', dtype='float32', *dims):
+    def __init__(self, module, device='cpu', dtype='float32', dims=None):
         '''Construct a `TorchModel`.
 
         Arguments:
@@ -130,7 +130,8 @@ class TorchModel(Model):
                 the number and order of dimensions must match the number and
                 order of inputs expected by the module. A value of ``None``
                 means any shape is allowed for the corresponding input. If not
-                present, the number and shape of inputs is unconstrained.
+                present, the number and shape of inputs is unconstrained. Do
+                not include the batch dimension.
         '''
         self.device = torch.device(device)
         self.dtype = parse_dtype(dtype)
@@ -166,8 +167,9 @@ class TorchModel(Model):
             x = x.to(self.device, self.dtype)
 
             if self.dims and self.dims[i]:
-                assert x.dim() <= self.dims[i]
-                for _ in range(x.dim(), self.dims[i]):
+                dim = self.dims[i] + 1
+                assert x.dim() <= dim
+                for _ in range(x.dim(), dim):
                     x = x.unsqueeze_(0)
 
             yield x
