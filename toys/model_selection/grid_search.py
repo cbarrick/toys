@@ -7,7 +7,7 @@ import torch
 from torch import multiprocessing as mp
 
 import toys
-from toys.estimator import BaseEstimator, Estimator, Model
+from toys.common import BaseEstimator, Estimator, Model
 from toys.dataset.utils import Subset
 from toys.metrics import Accumulator, ScoreFn, supervised_score, unsupervised_score
 
