@@ -50,14 +50,14 @@ class Zip(Dataset):
         self.datasets = datasets
 
     def __getitem__(self, index):
-        return tuple(d[index] for d in self.datasets)
+        columns = []
+        for dataset in self.datasets:
+            x = dataset[index]
+            if isinstance(x, tuple):
+                columns.extend(x)
+            else:
+                columns.append(x)
+        return tuple(columns)
 
     def __len__(self):
         return len(self.datasets[0])
-
-
-def zip(*datasets):
-    if len(datasets) == 1:
-        return datasets[0]
-    else:
-        return Zip(*datasets)

@@ -77,7 +77,7 @@ class GridSearchCV(BaseEstimator):
                 and returns an iterable over ``(train, test)`` pairs, where
                 ``train`` indexes the training instances and ``test`` indexes
                 the validation instances.
-            metric (Accumulator or Sequence[Accumulator]):
+            metric (str or Accumulator or Sequence[str or Accumulator]):
                 A metric or metrics to measure the goodness of fit of a model.
             n_jobs (int or None):
                 The number of worker processes. If 0, all work is done in the
@@ -109,7 +109,6 @@ class GridSearchCV(BaseEstimator):
         cv = kwargs.get('cv', 3)
         n_jobs = kwargs.get('n_jobs', 0)
         dry_run = kwargs.get('dry_run', False)
-        metric = kwargs.get('metric', 'negative_mean_squared_error')
 
         if estimator is None:
             msg = 'Estimator must not be None.'
@@ -119,10 +118,6 @@ class GridSearchCV(BaseEstimator):
 
         if not callable(cv):
             cv = k_fold(cv)
-
-        if isinstance(metric, (Accumulator, str)):
-            metric = [metric]
-        metric = [parse_metric(m) for m in metric]
 
         # The algorithm below follows a map-reduce pattern for parallelism:
         #
@@ -142,17 +137,7 @@ class GridSearchCV(BaseEstimator):
             logger.info(f'evaluating parameter set {param_number} on fold {fold_number}')
             full_params = {**kwargs, **params}
             model = estimator(train_set, **full_params)
-
-            for *inputs, target in DataLoader(test_set, **kwargs):
-                prediction = model(*inputs)
-                for m in metric:
-                    m.accumulate(target, prediction)
-                if dry_run: break
-
-            score = tuple(m.reduce() for m in metric)
-            if len(score) == 1:
-                score = score[0]
-
+            score = toys.score(model, test_set, **full_params)
             return {
                 'params': tuple(params.items()),
                 'score': score,

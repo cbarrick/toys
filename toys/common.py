@@ -7,8 +7,9 @@ import torch
 from torch.nn import Module
 
 import toys
-from toys.datasets.utils import Dataset
-from toys.parsers import parse_dtype
+from toys.datasets.utils import Dataset, DataLoader, Zip
+from toys.metrics import Accumulator
+from toys.parsers import parse_dtype, parse_metric
 
 
 Model = Callable
@@ -179,3 +180,66 @@ class TorchModel(Model):
                     x = x.unsqueeze_(0)
 
             yield x
+
+
+def zip(*datasets):
+    '''Returns a dataset combining the columns of all given datasets.
+
+    Arguments:
+        datasets (Dataset):
+            The datasets to combine.
+
+    Returns:
+        zipped (Dataset):
+            The combined dataset.
+    '''
+    if len(datasets) == 1:
+        return datasets[0]
+    else:
+        return Zip(*datasets)
+
+
+def score_supervised(model, *inputs, **kwargs):
+    '''Score a model against some inputs using a supervised metric.
+
+    Arguments:
+        model (Model):
+            The model to score.
+        inputs (Dataset):
+            The datasets to score against.
+
+    Keyword Arguments:
+        metric (str or Accumulator or Sequence[str or Accumulator]):
+            A metric or metrics to measure the goodness of fit of a model.
+            Defaults to the negative mean squared error.
+        dry_run (bool):
+            If true, scores only one batch. Useful for debugging.
+        **kwargs:
+            Additional keyword arguments are forwarded to the `DataLoader`.
+
+    Returns:
+        score (float):
+            The score of the model against the inputs.
+
+    ..note::
+        The function `toys.score` is equivalent to `toys.score_supervised`.
+    '''
+    dry_run = kwargs.get('dry_run', False)
+    metric = kwargs.get('metric', 'negative_mean_squared_error')
+
+    if isinstance(metric, (Accumulator, str)):
+        metric = [metric]
+    metric = [parse_metric(m) for m in metric]
+
+    for *batch, target in DataLoader(*inputs, **kwargs):
+        prediction = model(*batch)
+        for m in metric:
+            m.accumulate(target, prediction)
+        if dry_run: break
+
+    score = tuple(m.reduce() for m in metric)
+    if len(score) == 1: score = score[0]
+    return score
+
+
+score = score_supervised

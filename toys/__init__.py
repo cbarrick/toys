@@ -5,4 +5,6 @@ from . import model_selection
 from . import parsers
 from . import supervised
 
-from toys.datasets.utils import zip
+from .common import score
+from .common import score_supervised
+from .common import zip
