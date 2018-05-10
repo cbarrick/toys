@@ -54,3 +54,10 @@ class Zip(Dataset):
 
     def __len__(self):
         return len(self.datasets[0])
+
+
+def zip(*datasets):
+    if len(datasets) == 1:
+        return datasets[0]
+    else:
+        return Zip(*datasets)

@@ -53,13 +53,12 @@ def search_param_grid(grid):
 
 
 class GridSearchCV(BaseEstimator):
-    def fit(self, dataset, *, estimator=None, param_grid=None, cv=3, n_jobs=0, dry_run=False,
-            metric='negative_mean_squared_error', **kwargs):
+    def fit(self, *datasets, **kwargs):
         '''Search for the best parameters of an model.
 
         Arguments:
-            dataset (Sequence[Dataset]):
-                The dataset to fit.
+            datasets (Dataset):
+                The datasets to fit.
 
         Keyword Arguments:
             estimator (Estimator or None):
@@ -86,7 +85,8 @@ class GridSearchCV(BaseEstimator):
             dry_run (bool):
                 If true, break from loops early. Useful for debugging.
             **kwargs:
-                Forwarded to the `DataLoader`.
+                Additional keyword arguments are forwarded to the estimator
+                and `DataLoader`.
 
         Returns:
             best_estimator (TunedEstimator):
@@ -103,6 +103,14 @@ class GridSearchCV(BaseEstimator):
         Todo:
             - Use a global scope for kwargs to the default score functions.
         '''
+        dataset = toys.zip(*datasets)
+        estimator = kwargs.get('estimator', None)
+        param_grid = kwargs.get('param_grid', None)
+        cv = kwargs.get('cv', 3)
+        n_jobs = kwargs.get('n_jobs', 0)
+        dry_run = kwargs.get('dry_run', False)
+        metric = kwargs.get('metric', 'negative_mean_squared_error')
+
         if estimator is None:
             msg = 'Estimator must not be None.'
             msg += ' The `estimator` argument must be specified when'
@@ -132,17 +140,23 @@ class GridSearchCV(BaseEstimator):
         def run(job):
             (params, train_set, test_set, fold_number, param_number) = job
             logger.info(f'evaluating parameter set {param_number} on fold {fold_number}')
-            model = estimator(train_set, **params)
+            full_params = {**kwargs, **params}
+            model = estimator(train_set, **full_params)
 
             for *inputs, target in DataLoader(test_set, **kwargs):
                 prediction = model(*inputs)
                 for m in metric:
                     m.accumulate(target, prediction)
                 if dry_run: break
-            score = tuple(m.reduce() for m in metric)
 
-            params = tuple(params.items())
-            return {'params':params, 'score':score}
+            score = tuple(m.reduce() for m in metric)
+            if len(score) == 1:
+                score = score[0]
+
+            return {
+                'params': tuple(params.items()),
+                'score': score,
+            }
 
         def combine(results):
             by_params = lambda x: x['params']
@@ -151,11 +165,13 @@ class GridSearchCV(BaseEstimator):
             cv_results = []
             results = sorted(results, key=by_params)
             for params, group in groupby(results, by_params):
-                scores = [result['score'] for result in group]
+                scores = tuple(result['score'] for result in group)
                 mean_score = np.mean(scores, axis=0)
+                if not np.isscalar(mean_score):
+                    mean_score = tuple(mean_score)
                 cv_results.append({
                     'params': dict(params),
-                    'mean_score': tuple(mean_score),
+                    'mean_score': mean_score,
                     'scores': scores,
                 })
 
@@ -179,6 +195,7 @@ class GridSearchCV(BaseEstimator):
 
         best_result = cv_results[-1]
         best_params = best_result['params']
-        best_estimator = TunedEstimator(estimator, best_params, cv_results)
+        full_params = {**kwargs, **best_params}
+        best_estimator = TunedEstimator(estimator, full_params, cv_results)
 
         return best_estimator

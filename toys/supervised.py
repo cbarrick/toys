@@ -14,71 +14,64 @@ from toys.parsers import parse_dtype, parse_loss, parse_optimizer
 class GradientDescent(BaseEstimator):
     '''A supervised stochastic gradient descent estimator for PyTorch modules.
     '''
-    def fit(self, dataset, *, module=None, loss_fn='mse', optimizer='SGD:lr=1e-4', max_epochs=100,
-            batch_size=1, device_ids=None, stop_policy=None, patience=-1, dtype=None,
-            classifier=True, dry_run=False, **kwargs):
+    def __init__(self, module=None, **kwargs):
+        kwargs['module'] = module
+        super().__init__(**kwargs)
+
+    def fit(self, dataset, **kwargs):
         '''Trains a TorchModel.
 
         Users should not call this method directly, but instead call the
         estimator as a function.
 
         Arguments:
-            dataset (Dataset):
-                The data to fit. The elements of the dataset should be
-                $n$-tuples. In supervised mode, the first $n-1$ elements are
-                used as inputs to the module, with the final element as the
-                target. In unspuervised mode, all elements are input to the
-                module.
+            datasets (Dataset):
+                The datasets to fit.
+                **TODO**: document expected format.
 
         Keyword Arguments:
             module (Module or None):
                 A constructor for the PyTorch module to train. The module may
                 be specified either when constructing or calling this estimator
                 and MUST NOT be None. (Though None will successfully typecheck.)
+            classifier (bool):
+                If true, the learned model is a classifier. The default is
+                false. See `toys.TorchModel` for more information.
             loss_fn (str or Callable[..., float]):
-                The loss function. If a string is passed, it is looked up in
-                the `torch.nn.functional` module. Otherwise, the argument must
-                be a function which takes the predicted values and the true
-                targets and returns the computed loss.
+                The loss function. If the argument is a function, it must
+                accept the predicted values and the true targets as arguments
+                and return the computed loss. The default is cross entropy if
+                classifier is true and mean squared error otherwise.
             optimizer (str or Callable[..., Optimizer]):
-                A constructor for the optimizer. If a string is given, it is
-                parsed as the name of a class in the `torch.optim` module,
-                optionally followed by keyword arguments of the form
-                ':{KEY}={VAL}' (note the leading ':'). Values will be cast to
-                float when possible. If a callable is given, it should take the
-                trainable parameters and return an optimizer.
+                A constructor for the optimizer. If the argument is a function,
+                it should take the trainable parameters as an argument and
+                return an optimizer.
             max_epochs (int):
                 The maximum number of passes over the data during training.
-            batch_size (int):
-                The batch size for each iteration of the optimizer. To maximize
-                GPU utilization, it should be an integer multiple of the number
-                of devices.
-            device_ids (Sequence[int] or None):
+                The default is 100.
+            device_ids (Sequence[int]):
                 A list of CUDA device IDs to use during training.
                 The default is to use all devices.
-            stop_policy (Callable[[float], bool] or None):
+            stop_policy (Callable[[float], bool]):
                 Determines when to halt learning. The argument must be a
                 function which accepts the mean validation or training loss at
                 the end of each epoch and returns true if training should halt.
                 The default is to never stop early.
             patience (int):
                 The stop policy must return true this many additional times
-                consecutivly to stop training. A negative value is equivalent
-                to an infinite patience.
-            dtype (str or torch.dtype or None):
+                consecutivly to stop training. The default is -1, meaning
+                infinite patience.
+            dtype (str or torch.dtype):
                 Cast the module to this data type. This can be a PyTorch tensor
                 class, a conventional name like 'float' and 'double', or an
                 explicit name like 'float32' and 'float64'. The default is
                 determined by `torch.get_default_dtype` and may be set with
                 `torch.set_default_dtype`.
-            classifier (bool):
-                If true, the resulting model is a classifier.
-                See `toys.TorchModel` for more information.
             dry_run (bool):
                 If true, break from loops early. Useful for debugging.
             **kwargs:
                 Additional keyword arguments are forwarded to the module
-                constructor.
+                constructor and `DataLoader`.
 
         Returns:
             model (TorchModel):
@@ -89,12 +82,23 @@ class GradientDescent(BaseEstimator):
         all_devices = list(range(device_count))
         never_stop = lambda _: False
 
-        device_ids = device_ids or all_devices
-        stop_policy = stop_policy or never_stop
+        module = kwargs.get('module', None)
+        classifier = kwargs.get('classifier', True)
+        loss_fn = kwargs.get('loss_fn', 'cross_entropy' if classifier else 'mse')
+        optimizer = kwargs.get('optimizer', 'SGD:lr=1e-4')
+        max_epochs = kwargs.get('max_epochs', 100)
+        batch_size = kwargs.get('batch_size', 1)
+        device_ids = kwargs.get('device_ids', all_devices)
+        stop_policy = kwargs.get('stop_policy', never_stop)
+        patience = kwargs.get('patience', -1)
+        dtype = kwargs.get('dtype', torch.get_default_dtype())
+        dry_run = kwargs.get('dry_run', False)
+
         optimizer = parse_optimizer(optimizer)
         loss_fn = parse_loss(loss_fn)
         dtype = parse_dtype(dtype)
 
+        assert module is not None
         mod = module(**kwargs)
         mod = mod.to(dtype).train()
         mod = DataParallel(mod, device_ids)
@@ -119,7 +123,7 @@ class GradientDescent(BaseEstimator):
 
         # Perform one epoch of gradient descent.
         def train_epoch():
-            train_set = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+            train_set = DataLoader(dataset, **kwargs)
             train_loss = Mean()
             n = len(train_set)
             for i, batch in enumerate(train_set):
