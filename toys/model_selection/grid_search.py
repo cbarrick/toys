@@ -9,11 +9,11 @@ from torch import multiprocessing as mp
 
 import toys
 from toys.common import BaseEstimator, Estimator, Model, TunedEstimator
-from toys.datasets.utils import Subset
-from toys.metrics import Accumulator
+from toys.datasets.utils import DataLoader, Subset
+from toys.metrics import Accumulator, NegMeanSquaredError
+from toys.parsers import parse_metric
 
 from .cross_val import k_fold, CrossValSplitter
-from .score_fn import ScoreFn, supervised_score, unsupervised_score
 
 
 logger = getLogger(__name__)
@@ -53,8 +53,8 @@ def search_param_grid(grid):
 
 
 class GridSearchCV(BaseEstimator):
-    def fit(self, dataset, *, estimator=None, param_grid=None, cv=3,
-            metric=None, score_fn='supervised', n_jobs=0):
+    def fit(self, dataset, *, estimator=None, param_grid=None, cv=3, n_jobs=0, dry_run=False,
+            metric='negative_mean_squared_error', **kwargs):
         '''Search for the best parameters of an model.
 
         Arguments:
@@ -78,20 +78,15 @@ class GridSearchCV(BaseEstimator):
                 and returns an iterable over ``(train, test)`` pairs, where
                 ``train`` indexes the training instances and ``test`` indexes
                 the validation instances.
-            score_fn (str or ScoreFn):
-                A function for scoring models against validation sets. The
-                function will recieve a model and a subset of each dataset,
-                and must return a float or tuple of floats as a score. The
-                special values 'supervised' and 'unsupervised' will create
-                score functions from `metric`. See `supervised_score` and
-                `unsupervised_score`.
-            metric (Accumulator or Sequence[Accumulator] or None):
-                Accumulator(s) to measure the goodness of fit of a model. This
-                argument is ignored when a custom `score_fn` is given. The
-                default depends on `score_fn`.
+            metric (Accumulator or Sequence[Accumulator]):
+                A metric or metrics to measure the goodness of fit of a model.
             n_jobs (int or None):
                 The number of worker processes. If 0, all work is done in the
-                main process. If None, the default is `os.cpu_count()`.
+                main process. If None, use the value of `os.cpu_count()`.
+            dry_run (bool):
+                If true, break from loops early. Useful for debugging.
+            **kwargs:
+                Forwarded to the `DataLoader`.
 
         Returns:
             best_estimator (TunedEstimator):
@@ -117,12 +112,9 @@ class GridSearchCV(BaseEstimator):
         if not callable(cv):
             cv = k_fold(cv)
 
-        if score_fn == 'supervised':
-            score_fn = supervised_score(metric)
-        elif score_fn == 'unsupervised':
-            score_fn = unsupervised_score(metric)
-        else:
-            assert callable(score_fn)
+        if isinstance(metric, (Accumulator, str)):
+            metric = [metric]
+        metric = [parse_metric(m) for m in metric]
 
         # The algorithm below follows a map-reduce pattern for parallelism:
         #
@@ -131,31 +123,48 @@ class GridSearchCV(BaseEstimator):
         # 3. Scores are reduced into cross validation results.
 
         def jobs():
-            for params in search_param_grid(param_grid):
-                for train, test in cv(dataset):
+            for fold_number, (train, test) in enumerate(cv(dataset)):
+                for param_number, params in enumerate(search_param_grid(param_grid)):
                     train_set = Subset(dataset, train)
                     test_set = Subset(dataset, test)
-                    yield params, train_set, test_set
+                    yield params, train_set, test_set, fold_number, param_number
 
-        def score(job):
-            (params, train_set, test_set) = job
+        def run(job):
+            (params, train_set, test_set, fold_number, param_number) = job
+            logger.info(f'evaluating parameter set {param_number} on fold {fold_number}')
             model = estimator(train_set, **params)
-            score = score_fn(model, test_set)
-            params = tuple(params.items())
-            if not isinstance(score, tuple): score = (score,)
-            return (params, score)
 
-        def combine(scores):
-            scores = sorted(scores, key=lambda x: x[0])
-            scores = groupby(scores, key=lambda x: x[0])
-            scores = {p: list(s) for p, s in scores.items()}
-            scores = {p: tuple(np.mean(s, axis=0)) for p, s in scores.items()}
-            cv_results = ({'params':p, 'mean_score':s} for p, s in scores.items())
-            cv_results = sorted(cv_results, key=lambda x: x['mean_score'])
+            for *inputs, target in DataLoader(test_set, **kwargs):
+                prediction = model(*inputs)
+                for m in metric:
+                    m.accumulate(target, prediction)
+                if dry_run: break
+            score = tuple(m.reduce() for m in metric)
+
+            params = tuple(params.items())
+            return {'params':params, 'score':score}
+
+        def combine(results):
+            by_params = lambda x: x['params']
+            by_rank = lambda x: x['mean_score']
+
+            cv_results = []
+            results = sorted(results, key=by_params)
+            for params, group in groupby(results, by_params):
+                scores = [result['score'] for result in group]
+                mean_score = np.mean(scores, axis=0)
+                cv_results.append({
+                    'params': dict(params),
+                    'mean_score': tuple(mean_score),
+                    'scores': scores,
+                })
+
+            cv_results = sorted(cv_results, key=by_rank, reverse=True)
             return cv_results
 
         if n_jobs == 0:
-            scores = (score(j) for j in jobs())
+            results = (run(j) for j in jobs())
+            cv_results = combine(results)
         else:
             # The 'fork' start method is required so that user scripts can
             # execute experiments at the top level. Otherwise they must be
@@ -164,12 +173,12 @@ class GridSearchCV(BaseEstimator):
             # WARNING: Safely forking a multithreaded process is problematic.
             logger.warn('multiprocessing is not fully supported')
             ctx = mp.get_context('fork')
-            pool = ctx.Pool(n_jobs)
-            scores = pool.imap(score, jobs())
-            pool.close()
+            with ctx.Pool(n_jobs) as pool:
+                results = pool.imap(run, jobs())
+                cv_results = combine(results)
 
-        cv_results = combine(scores)
         best_result = cv_results[-1]
         best_params = best_result['params']
         best_estimator = TunedEstimator(estimator, best_params, cv_results)
+
         return best_estimator

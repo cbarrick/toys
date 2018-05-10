@@ -43,7 +43,7 @@ class BaseEstimator(ABC):
         super().__init__()
         self._kwargs = kwargs
 
-    def __call__(self, dataset, **kwargs):
+    def __call__(self, *inputs, **kwargs):
         '''Construct a model, delegating to `fit`.
 
         Returns:
@@ -51,10 +51,10 @@ class BaseEstimator(ABC):
                 The model returned by `fit`.
         '''
         kwargs = {**self._kwargs, **kwargs}
-        return self.fit(dataset, **kwargs)
+        return self.fit(*inputs, **kwargs)
 
     @abstractmethod
-    def fit(self, dataset, **kwargs):
+    def fit(self, *inputs, **kwargs):
         '''Constructs a model.
 
         Subclasses must implement this method.
@@ -63,8 +63,8 @@ class BaseEstimator(ABC):
         function. Meta-estimators like `GridSearchCV` return other estimators.
 
         Arguments:
-            dataset (Dataset):
-                The dataset to fit.
+            inputs (Dataset):
+                The inputs to fit.
             **kwargs:
                 The hyperparameters to use while training the model.
 
@@ -90,14 +90,14 @@ class TunedEstimator(BaseEstimator):
             Overall results of the search which generated this estimator.
     '''
     def __init__(self, estimator, params, cv_results=None):
-        super.__init__()
+        super().__init__()
         self.estimator = estimator
-        self.params = dict(best_params)
-        self.cv_results = dict(cv_results or {})
+        self.params = params
+        self.cv_results = cv_results or {}
 
-    def fit(self, dataset, **hyperparams):
+    def fit(self, *inputs, **hyperparams):
         params = {**self.params, **hyperparams}
-        model = estimator(dataset, **params)
+        model = self.estimator(*inputs, **params)
         return model
 
 
