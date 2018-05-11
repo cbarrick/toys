@@ -70,11 +70,11 @@ def parse_initializer(init):
     # in which case we return `xavier_uniform` with the proper gain.
     # If `init` is unknown, we use a gain of 1.
     if init == 'leaky_relu':
-        param = kwargs.get('negative_slope', 0.01)
+        param = kwargs.setdefault('negative_slope', 0.01)
     else:
         param = None
     gain = nn.init.calculate_gain(init, param)
-    gain = kwargs.get('gain', gain)
+    gain = kwargs.setdefault('gain', gain)
     return lambda x: nn.init.xavier_uniform(x, gain)
 
 

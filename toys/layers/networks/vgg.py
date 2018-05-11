@@ -55,7 +55,7 @@ class VGG11(_VGGBase):
         (*batch, height, width, in_channels) = in_shape
         transition_shape = (*batch, height//2**5, width//2**5, 512)
 
-        Conv = kwargs.get('conv', Conv2d)
+        Conv = kwargs.setdefault('conv', Conv2d)
         conv_args, dense_args, output_args = parse_args(kwargs)
 
         # Max pooling is automatically applied at the end of each conv layer.
@@ -79,7 +79,7 @@ class VGG13(_VGGBase):
         (*batch, height, width, in_channels) = in_shape
         transition_shape = (*batch, height//2**5, width//2**5, 512)
 
-        Conv = kwargs.get('conv', Conv2d)
+        Conv = kwargs.setdefault('conv', Conv2d)
         conv_args, dense_args, output_args = parse_args(kwargs)
 
         # Max pooling is automatically applied at the end of each conv layer.
@@ -103,7 +103,7 @@ class VGG16(_VGGBase):
         (*batch, height, width, in_channels) = in_shape
         transition_shape = (*batch, height//2**5, width//2**5, 512)
 
-        Conv = kwargs.get('conv', Conv2d)
+        Conv = kwargs.setdefault('conv', Conv2d)
         conv_args, dense_args, output_args = parse_args(kwargs)
 
         # Max pooling is automatically applied at the end of each conv layer.
@@ -127,7 +127,7 @@ class VGG19(_VGGBase):
         (*batch, height, width, in_channels) = in_shape
         transition_shape = (*batch, height//2**5, width//2**5, 512)
 
-        Conv = kwargs.get('conv', Conv2d)
+        Conv = kwargs.setdefault('conv', Conv2d)
         conv_args, dense_args, output_args = parse_args(kwargs)
 
         # Max pooling is automatically applied at the end of each conv layer.

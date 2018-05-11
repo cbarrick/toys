@@ -41,10 +41,10 @@ class Dense(nn.Module):
         assert 0 < len(shapes)
         out_shape = shapes[-1]
 
-        bias = kwargs.get('bias', True)
-        actv = kwargs.get('activation', None)
-        init = kwargs.get('initializer', 'kaiming_uniform')
-        bias_init = kwargs.get('bias_initializer', 'constant:val=0')
+        bias = kwargs.setdefault('bias', True)
+        actv = kwargs.setdefault('activation', None)
+        init = kwargs.setdefault('initializer', 'kaiming_uniform')
+        bias_init = kwargs.setdefault('bias_initializer', 'constant:val=0')
 
         actv = parse_activation(actv)
         init = parse_initializer(init)

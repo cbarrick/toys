@@ -107,11 +107,11 @@ class GridSearchCV(BaseEstimator):
             raise ValueError('estimator not given')
 
         estimator = kwargs['estimator']
-        param_grid = kwargs.get('param_grid', None)
-        cv = kwargs.get('cv', 3)
-        metric = kwargs.get('metric', 'negative_mean_squared_error')
-        n_jobs = kwargs.get('n_jobs', 0)
-        dry_run = kwargs.get('dry_run', False)
+        param_grid = kwargs.setdefault('param_grid', None)
+        cv = kwargs.setdefault('cv', 3)
+        metric = kwargs.setdefault('metric', 'negative_mean_squared_error')
+        n_jobs = kwargs.setdefault('n_jobs', 0)
+        dry_run = kwargs.setdefault('dry_run', False)
 
         dataset = toys.zip(*datasets)
         metric = parse_metric(metric)

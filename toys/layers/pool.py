@@ -7,11 +7,11 @@ from torch import nn
 class MaxPool2d(nn.Module):
     def __init__(self, kernel_size, **kwargs):
         super().__init__()
-        stride = kwargs.get('stride', kernel_size)
-        padding = kwargs.get('padding', 0)
-        dilation = kwargs.get('dilation', 1)
-        return_indices = kwargs.get('return_indices', False)
-        ceil_mode = kwargs.get('ceil_mode', False)
+        stride = kwargs.setdefault('stride', kernel_size)
+        padding = kwargs.setdefault('padding', 0)
+        dilation = kwargs.setdefault('dilation', 1)
+        return_indices = kwargs.setdefault('return_indices', False)
+        ceil_mode = kwargs.setdefault('ceil_mode', False)
 
         self.pool = nn.MaxPool2d(kernel_size,
             stride=stride, padding=padding, dilation=dilation,
