@@ -97,6 +97,7 @@ class GradientDescent(BaseEstimator):
         optimizer = parse_optimizer(optimizer)
         loss_fn = parse_loss(loss_fn)
         dtype = parse_dtype(dtype)
+        use_cuda = bool(device_ids)
 
         assert module is not None
         mod = module(**kwargs)
@@ -114,6 +115,7 @@ class GradientDescent(BaseEstimator):
         def partial_fit(batch):
             opt.zero_grad()
             *inputs, target = batch
+            if use_cuda: target = target.cuda()
             prediction = mod(*inputs)
             loss = loss_fn(prediction, target)
             loss = loss.mean()
