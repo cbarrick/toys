@@ -1,9 +1,12 @@
 from abc import ABC, abstractmethod
+from hashlib import md5
 from logging import getLogger
 from pathlib import Path
+from tarfile import open as open_tar
+from time import sleep
+from urllib import request
 
 import numpy as np
-import torch
 
 import toys
 from toys.datasets.utils import Dataset
@@ -36,6 +39,9 @@ class _CIFAR(Dataset, ABC):
         self.test = test
 
         name = f"{self.__class__.__name__} {'test' if test else 'train'} set"
+
+        self._verify_or_download()
+        self._extract()
 
         if prefetch:
             logger.info(f'prefetching {name}')
@@ -98,12 +104,59 @@ class _CIFAR(Dataset, ABC):
 
         return data, labels
 
-    def _download_and_verify(self):
-        # TODO: This should download, verify, and extract the dataset.
-        # It should not download if the archive exists and is verified.
-        # Use `self.url` and `self.md5`.
-        # This should be run during `__init__` before `_read_all_from_disk`.
-        raise NotImplementedError
+    def _verify_or_download(self, max_tries=3):
+        '''Verify the data if it exists or download it if it does not.
+        '''
+        self.base_path.mkdir(exist_ok=True, parents=True)
+
+        # verify local file, assume it has been successfully extracted
+        if self.path.exists():
+            try:
+                self._verify()
+                return
+            except ValueError as e:
+                logger.warning(str(e))
+
+        # download if missing or invalid
+        for i in range(max_tries):
+            logger.info(f'downloading {self.url} to {self.path}')
+            sleep((1<<i) - 1)  # exponential backoff before each retry
+            with request.urlopen(self.url) as response:
+                data = response.read()
+                with open(self.path, 'wb') as fd:
+                    fd.write(data)
+                try:
+                    self._verify()
+                    self._extract()
+                    return
+                except ValueError as e:
+                    logger.warning(str(e))
+
+        raise RuntimeError(f'failed to download and verify {self.url}')
+
+    def _verify(self):
+        '''Verify the md5 of the data on disk.
+        '''
+        with open(self.path, 'rb') as fd:
+            data = fd.read()
+        observed = md5(data).hexdigest()
+        expected = self.md5
+        if observed != expected:
+            raise ValueError(f'invalid md5 digest for {self.path}: expected {expected}, observed {observed}')
+
+    def _extract(self):
+        with open_tar(self.path) as tar:
+            for name in tar.getnames():
+                path = self.base_path / name
+                if path.exists():
+                    continue
+                logger.info(f'extracting {path}')
+                tar.extract(name, path=self.base_path)
+
+    @property
+    def path(self):
+        filename = self.url.split('/')[-1]
+        return self.base_path / filename
 
     @property
     @abstractmethod
