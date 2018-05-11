@@ -1,3 +1,5 @@
+from .core import Metric
+from .core import MultiMetric
 from .core import Accumulator
 from .core import Mean
 from .core import Sum

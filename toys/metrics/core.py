@@ -1,16 +1,31 @@
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from typing import Callable
 
 import toys
-from toys.datasets.utils import Dataset
-
-try:
-    from typing import Protocol
-except:
-    from abc import ABC as Protocol
+from toys.datasets.utils import Dataset, DataLoader
+from toys.parsers import parse_metric
 
 
-class Accumulator(Protocol):
+Metric = Callable
+
+
+class MultiMetric(Metric):
+    def __init__(self, metrics, **kwargs):
+        self.metrics = [parse_metric(m) for m in metrics]
+        self.kwargs = kwargs
+
+    def __call__(self, model, *inputs, **kwargs):
+        kwargs = {**self.kwargs, **kwargs}
+        scores = tuple(m(model, *inputs, **kwargs) for m in self.metrics)
+        if len(scores) == 1:
+            return scores[0]
+        else:
+            return scores
+
+
+class Accumulator(ABC):
+    supervised = False
+
     @abstractmethod
     def accumulate(self, *values):
         '''Update the accumulator with new observations.
@@ -22,6 +37,23 @@ class Accumulator(Protocol):
         '''Read the value of the accumulator and reset to the initial state.
         '''
         raise NotImplementedError
+
+    def __call__(self, model, *inputs, **kwargs):
+        dry_run = kwargs.setdefault('dry_run', False)
+
+        for batch in DataLoader(*inputs, **kwargs):
+            if self.supervised:
+                *inputs, target = batch
+                prediction = model(*inputs)
+                self.accumulate(target, prediction)
+            else:
+                prediction = model(*batch)
+                self.accumulate(prediction)
+            if dry_run:
+                break
+
+        score = self.reduce()
+        return score
 
 
 class Sum(Accumulator):

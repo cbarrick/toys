@@ -11,6 +11,8 @@ EPSILON = float_info.epsilon
 
 
 class Accuracy(Accumulator):
+    supervised = True
+
     def __init__(self, **kwargs):
         self.val = Mean(**kwargs)
 
@@ -25,6 +27,8 @@ class Accuracy(Accumulator):
 
 
 class TruePositives(Accumulator):
+    supervised = True
+
     def __init__(self, target=1, **kwargs):
         self.target = target
         self.val = Sum(**kwargs)
@@ -40,6 +44,8 @@ class TruePositives(Accumulator):
 
 
 class FalsePositives(Accumulator):
+    supervised = True
+
     def __init__(self, target=1, **kwargs):
         self.target = target
         self.val = Sum(**kwargs)
@@ -55,6 +61,8 @@ class FalsePositives(Accumulator):
 
 
 class TrueNegatives(Accumulator):
+    supervised = True
+
     def __init__(self, target=1, **kwargs):
         self.target = target
         self.val = Sum(**kwargs)
@@ -70,6 +78,8 @@ class TrueNegatives(Accumulator):
 
 
 class FalseNegatives(Accumulator):
+    supervised = True
+
     def __init__(self, target=1, **kwargs):
         self.target = target
         self.val = Sum(**kwargs)
@@ -85,6 +95,8 @@ class FalseNegatives(Accumulator):
 
 
 class Precision(Accumulator):
+    supervised = True
+
     def __init__(self, target=1, **kwargs):
         self.tp = TruePositives(target, **kwargs)
         self.fp = FalsePositives(target, **kwargs)
@@ -102,6 +114,8 @@ class Precision(Accumulator):
 
 
 class Recall(Accumulator):
+    supervised = True
+
     def __init__(self, target=1, **kwargs):
         self.tp = TruePositives(target, **kwargs)
         self.fn = FalseNegatives(target, **kwargs)
@@ -119,6 +133,8 @@ class Recall(Accumulator):
 
 
 class FScore(Accumulator):
+    supervised = True
+
     def __init__(self, beta=1, target=1, **kwargs):
         self.beta = beta
         self.tp = TruePositives(target, **kwargs)
@@ -143,6 +159,8 @@ class FScore(Accumulator):
 
 
 class MeanSquaredError(Accumulator):
+    supervised = True
+
     def __init__(self, **kwargs):
         self.mean = Mean(**kwargs)
 
@@ -157,6 +175,8 @@ class MeanSquaredError(Accumulator):
 
 
 class NegMeanSquaredError(Accumulator):
+    supervised = True
+
     def __init__(self, **kwargs):
         self.mean = Mean(**kwargs)
 

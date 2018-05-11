@@ -137,8 +137,13 @@ def parse_dtype(dtype):
 
 
 def parse_metric(metric):
-    if isinstance(metric, metrics.Accumulator):
+    if callable(metric):
         return metric
+
+    if isinstance(metric, tuple):
+        # This is mutually recursive with the MultiMetric constructor:
+        # MultiMetric will attempt to parse each sub metric.
+        return metrics.MultiMetric(metric)
 
     metric, kwargs = parse_str(metric)
 

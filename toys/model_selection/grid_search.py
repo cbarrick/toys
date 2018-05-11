@@ -10,7 +10,7 @@ from torch import multiprocessing as mp
 import toys
 from toys.common import BaseEstimator, Estimator, Model, TunedEstimator
 from toys.datasets.utils import DataLoader, Subset
-from toys.metrics import Accumulator, NegMeanSquaredError
+from toys.metrics import Metric
 from toys.parsers import parse_metric
 
 from .cross_val import k_fold, CrossValSplitter
@@ -77,7 +77,7 @@ class GridSearchCV(BaseEstimator):
                 and returns an iterable over ``(train, test)`` pairs, where
                 ``train`` indexes the training instances and ``test`` indexes
                 the validation instances.
-            metric (str or Accumulator or Sequence[str or Accumulator]):
+            metric (str or Metric or Sequence[str or Metric]):
                 A metric or metrics to measure the goodness of fit of a model.
             n_jobs (int or None):
                 The number of worker processes. If 0, all work is done in the
@@ -103,18 +103,18 @@ class GridSearchCV(BaseEstimator):
         Todo:
             - Use a global scope for kwargs to the default score functions.
         '''
-        dataset = toys.zip(*datasets)
-        estimator = kwargs.get('estimator', None)
+        if 'estimator' not in kwargs:
+            raise ValueError('estimator not given')
+
+        estimator = kwargs['estimator']
         param_grid = kwargs.get('param_grid', None)
         cv = kwargs.get('cv', 3)
+        metric = kwargs.get('metric', 'negative_mean_squared_error')
         n_jobs = kwargs.get('n_jobs', 0)
         dry_run = kwargs.get('dry_run', False)
 
-        if estimator is None:
-            msg = 'Estimator must not be None.'
-            msg += ' The `estimator` argument must be specified when'
-            msg += ' constructing or calling `GridSearchCV` (or both).'
-            raise ValueError(msg)
+        dataset = toys.zip(*datasets)
+        metric = parse_metric(metric)
 
         if not callable(cv):
             cv = k_fold(cv)
@@ -137,7 +137,7 @@ class GridSearchCV(BaseEstimator):
             logger.info(f'evaluating parameter set {param_number} on fold {fold_number}')
             full_params = {**kwargs, **params}
             model = estimator(train_set, **full_params)
-            score = toys.score(model, test_set, **full_params)
+            score = metric(model, test_set, **full_params)
             return {
                 'params': tuple(params.items()),
                 'score': score,
