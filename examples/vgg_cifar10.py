@@ -2,10 +2,10 @@ from tabulate import tabulate
 
 import toys
 from toys.datasets import CIFAR10
+from toys.gradient_descent import GradientDescent
 from toys.layers.networks import VGG11
 from toys.metrics import MultiMetric
 from toys.model_selection import GridSearchCV
-from toys.supervised import GradientDescent
 
 
 train_data = CIFAR10(test=False)
