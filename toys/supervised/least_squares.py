@@ -142,12 +142,5 @@ class LeastSquares(BaseEstimator):
 
         weight = weight.reduce()
         bias = y_mean - x_mean @ weight if learn_bias else 0
-
-        # TorchModel needs to know the number of dimensions of all columns.
-        # The zipped-but-not-flattened dataset is accessible as dataset.base.
-        *proto_inputs, proto_target = dataset.base[0]
-        shapes = (x.shape for x in proto_inputs)
-        dims = tuple(len(s) for s in shapes)
-
         mod = LeastSquaresModule(weight, bias)
-        return TorchModel(mod, classifier=False, dtype=dtype, dims=dims)
+        return TorchModel(mod, classifier=False, dtype=dtype)

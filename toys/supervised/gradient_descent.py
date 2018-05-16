@@ -170,9 +170,4 @@ class GradientDescent(BaseEstimator):
         mod = mod.module  # Unwrap from DataParallel.
         mod = mod.eval()  # Exit training mode.
         mod = mod.cpu()   # Release GPU resources.
-
-        *proto_inputs, proto_target = dataset[0]
-        shapes = (x.shape for x in proto_inputs)
-        dims = tuple(len(s) for s in shapes)
-
-        return TorchModel(mod, classifier=classifier, dtype=dtype, dims=dims)
+        return TorchModel(mod, classifier=classifier, dtype=dtype)

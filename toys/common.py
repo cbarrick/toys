@@ -105,18 +105,15 @@ class TunedEstimator(BaseEstimator):
 class TorchModel(Model):
     '''A wrapper around PyTorch modules.
 
-    This wrapper extends `torch.nn.Module` to accept scalars, numpy arrays, and
+    This wrapper extends `torch.nn.Module` to accept both numpy arrays, and
     torch tensors as input and to return numpy arrays as output.
-
-    A `TorchModel` is aware of the number of dimensions expected for each
-    input. If an input has fewer dimensions, trivial axes are added.
 
     ..note:
         A `TorchModel` is NOT a `torch.nn.Module`. Backprop graphs are not
         created during prediction.
     '''
 
-    def __init__(self, module, classifier=False, device='cpu', dtype='float32', dims=None):
+    def __init__(self, module, classifier=False, device='cpu', dtype='float32'):
         '''Construct a `TorchModel`.
 
         Arguments:
@@ -129,19 +126,11 @@ class TorchModel(Model):
                 The device on which to execute the model.
             dtype (str or torch.dtype):
                 The dtype to which the module and inputs are cast.
-            dims (Sequence[int or None] or None):
-                The number of dimensions required of each input. If present,
-                the number and order of dimensions must match the number and
-                order of inputs expected by the module. A value of ``None``
-                means any shape is allowed for the corresponding input. If not
-                present, the number and shape of inputs is unconstrained. Do
-                not include the batch dimension.
         '''
         self.classifier = classifier
         self.device = torch.device(device)
         self.dtype = parse_dtype(dtype)
         self.module = module.to(self.device, self.dtype)
-        self.dims = dims or None
 
     def __getattr__(self, name):
         '''Attribute access is delecated to the underlying module.
@@ -152,33 +141,20 @@ class TorchModel(Model):
         '''Evaluate the model on some inputs.
         '''
         with torch.no_grad():
-            inputs = self._cast_inputs(*inputs)
+            inputs = self._cast_inputs(inputs)
             y = self.module(*inputs)
             y = y.numpy()
             if self.classifier:
                 y = y.argmax(axis=1)
             return y
 
-    def _cast_inputs(self, *inputs):
+    def _cast_inputs(self, inputs):
         '''Cast inputs to tensors of the expected dtype, device, and dimension.
         '''
-        assert self.dims is None or len(inputs) == len(self.dims)
-
         for i, x in enumerate(inputs):
-            if np.isscalar(x):
-                x = np.array(x)
-
-            if isinstance(x, np.ndarray):
-                x = torch.from_numpy(x)
-
+            if np.isscalar(x): x = np.array(x)
+            if isinstance(x, np.ndarray): x = torch.from_numpy(x)
             x = x.to(self.device, self.dtype)
-
-            if self.dims and self.dims[i]:
-                dim = self.dims[i] + 1
-                assert x.dim() <= dim
-                for _ in range(x.dim(), dim):
-                    x = x.unsqueeze_(0)
-
             yield x
 
 
