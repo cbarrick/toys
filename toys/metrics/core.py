@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import Callable
 
+import torch
+
 import toys
 from toys.datasets.utils import Dataset, DataLoader
 from toys.parsers import parse_metric
@@ -57,14 +59,22 @@ class Accumulator(ABC):
 
 
 class Sum(Accumulator):
-    def __init__(self):
+    def __init__(self, fn=None, dim=None):
+        self.fn = fn
+        self.dim = dim
         self.val = 0
 
     def accumulate(self, batch):
-        try:
-            self.val += batch.sum(axis=0)
-        except AttributeError:
-            self.val += sum(batch)
+        if self.fn is not None:
+            batch = self.fn(batch)
+
+        if not torch.is_tensor(batch):
+            batch = torch.tensor(batch)
+
+        if self.dim is None:
+            self.val += batch.sum()
+        else:
+            self.val += batch.sum(dim=self.dim)
 
     def reduce(self):
         val = self.val
@@ -73,8 +83,9 @@ class Sum(Accumulator):
 
 
 class Mean(Accumulator):
-    def __init__(self, fn=None):
+    def __init__(self, fn=None, dim=None):
         self.fn = fn
+        self.dim = dim
         self.n = 0
         self.val = 0
 
@@ -82,15 +93,15 @@ class Mean(Accumulator):
         if self.fn is not None:
             batch = self.fn(batch)
 
-        n = len(batch)
+        if not torch.is_tensor(batch):
+            batch = torch.tensor(batch)
 
-        try:
-            val = batch.mean(axis=0)
-        except (AttributeError, RuntimeError):
-            # Torch throws RuntimeError when tensors do not implement `mean`.
-            # WARNING: The naive mean formula is unstable. The assumption is
-            # that the batch is small enough to avoid stability issues.
-            val = sum(batch) / n
+        if self.dim is None:
+            n = len(batch)
+            val = batch.mean()
+        else:
+            n = len(batch)
+            val = batch.mean(dim=self.dim)
 
         # Update the global mean with Chan's algorithm, which is stable:
         # https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Parallel_algorithm

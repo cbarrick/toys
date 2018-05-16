@@ -62,8 +62,8 @@ class GradientDescent(BaseEstimator):
                 consecutivly to stop training. The default is -1, meaning
                 infinite patience.
             dtype (str or torch.dtype):
-                Cast the module to this data type. This can be a PyTorch tensor
-                class, a conventional name like 'float' and 'double', or an
+                Cast the module to this data type. This can be a PyTorch dtype
+                object, a conventional name like 'float' and 'double', or an
                 explicit name like 'float32' and 'float64'. The default is
                 determined by `torch.get_default_dtype` and may be set with
                 `torch.set_default_dtype`.
