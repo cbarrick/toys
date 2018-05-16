@@ -11,11 +11,11 @@ class Dataset(Protocol):
     '''An improved Dataset base class.
     '''
     @abstractmethod
-    def __getitem__(self, index):
+    def __len__(self):
         raise NotImplementedError
 
     @abstractmethod
-    def __len__(self):
+    def __getitem__(self, index):
         raise NotImplementedError
 
 
@@ -37,8 +37,10 @@ class Subset(Dataset):
     def __len__(self):
         return len(self.indices)
 
-    def __getitem__(self, i):
-        return self.dataset[self.indices[i]]
+    def __getitem__(self, index):
+        i = self.indices[index]
+        cols = self.dataset[i]
+        return cols
 
 
 class Zip(Dataset):
@@ -48,6 +50,9 @@ class Zip(Dataset):
         assert 0 < len(datasets)
         for d in datasets: assert len(d) == len(datasets[0])
         self.datasets = datasets
+
+    def __len__(self):
+        return len(self.datasets[0])
 
     def __getitem__(self, index):
         columns = []
@@ -59,5 +64,30 @@ class Zip(Dataset):
                 columns.append(x)
         return tuple(columns)
 
+
+class Flat(Dataset):
+    '''Flatten and concatenate the columns of a dataset.
+
+    If ``supervised=True``, then the rightmost column is flattened but not
+    concatenated to the others, e.g. treat that column as the targets.
+    '''
+    def __init__(self, base, supervised=True):
+        super().__init__()
+        self.base = base
+        self.supervised = supervised
+
     def __len__(self):
-        return len(self.datasets[0])
+        return len(self.base)
+
+    def __getitem__(self, index):
+        *inputs, target = self.base[index]
+        target = target.reshape(-1)
+        inputs = [x.reshape(-1) for x in inputs]
+
+        if self.supervised:
+            inputs = np.concatenate(inputs)
+            return inputs, target
+        else:
+            inputs.append(target)
+            inputs = np.concatenate(inputs)
+            return (inputs,)

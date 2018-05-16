@@ -7,7 +7,7 @@ import torch
 from torch.nn import Module
 
 import toys
-from toys.datasets.utils import Dataset, DataLoader, Zip
+from toys.datasets.utils import Dataset, DataLoader, Flat, Zip
 from toys.metrics import Accumulator
 from toys.parsers import parse_dtype, parse_metric
 
@@ -158,8 +158,9 @@ class TorchModel(Model):
             yield x
 
 
+# NOTE: zip is overloaded in this module.
 def zip(*datasets):
-    '''Returns a dataset combining the columns of all given datasets.
+    '''Returns a dataset with all of the columns of the given datasets.
 
     Arguments:
         datasets (Dataset):
@@ -173,3 +174,42 @@ def zip(*datasets):
         return datasets[0]
     else:
         return Zip(*datasets)
+
+
+def flatten(*datasets, supervised=True):
+    '''Returns a dataset combining the columns of the given datasets into a
+    a single column, whose shape is flattened.
+
+    In supervised mode, the rightmost column is flattened but not combined
+    into the main column.
+
+    Arguments:
+        datasets (Dataset):
+            The datasets to flatten.
+        supervised (bool):
+            Operate in supervised mode.
+
+    Returns:
+        flattened (Dataset):
+            The combined dataset. If supervised is False, the dataset contains
+            a single column with a flat shape. If supervised is True, the
+            dataset contains two columns with flat shape.
+    '''
+    dataset = zip(*datasets)  # NOTE: zip is overloaded in this module
+    cols = dataset[0]
+
+    if supervised:
+        assert 2 <= len(cols)
+
+    if 3 <= len(cols):
+        return Flat(dataset, supervised)
+
+    if 2 == len(cols) and not supervised:
+        return Flat(dataset, supervised)
+
+    for col in cols:
+        if len(col.shape) != 1:
+            return Flat(dataset, supervised)
+
+    # If we've got this far, the dataset is already flat
+    return dataset

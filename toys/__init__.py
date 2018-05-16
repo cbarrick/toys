@@ -6,3 +6,4 @@ from . import parsers
 from . import supervised
 
 from .common import zip
+from .common import flatten

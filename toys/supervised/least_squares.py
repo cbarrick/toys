@@ -15,22 +15,6 @@ from toys.parsers import parse_dtype
 logger = getLogger(__name__)
 
 
-class FlatDataset(Dataset):
-    def __init__(self, base):
-        super().__init__()
-        self.base = base
-
-    def __len__(self):
-        return len(self.base)
-
-    def __getitem__(self, index):
-        *inputs, target = self.base[index]
-        inputs = [x.reshape(-1) for x in inputs]
-        inputs = np.concatenate(inputs)
-        target = target.reshape(-1)
-        return inputs, target
-
-
 class LeastSquaresModule(Module):
     def __init__(self, weight, bias):
         super().__init__()
@@ -91,8 +75,7 @@ class LeastSquares(BaseEstimator):
                 in the training data.
         '''
         assert 0 < len(datasets)
-        dataset = toys.zip(*datasets)
-        dataset = FlatDataset(dataset)
+        dataset = toys.flatten(*datasets, supervised=True)
 
         # Note that the keyword arg `bias` is bound to the local var `learn_bias`.
         # The local var called `bias` holds the actual learned bias.
