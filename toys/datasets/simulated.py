@@ -9,13 +9,11 @@ from toys.datasets.utils import Dataset
 class SimulatedLinear(Dataset):
     '''A simulated linear dataset with gaussian noise.
 
-    The inputs are drawn from a uniform distribution over [0,1). The true
-    weights are sequential integers over [0, in_features). The true bias are
-    sequential integers over [0, out_features). The noise is drawn from a
-    standard normal distribution.
+    The inputs, true weights, and true bias are drawn from a standard uniform
+    distribution. The noise is drawn from a standard normal distribution.
     '''
 
-    def __init__(self, length, in_features=5, out_features=3, noise=True, seed='train'):
+    def __init__(self, length, in_features=5, out_features=3, bias=True, noise=True, seed='train'):
         '''Initialize a simulated dataset.
 
         Arguments:
@@ -25,25 +23,24 @@ class SimulatedLinear(Dataset):
                 The number of features in the input data.
             out_features (int):
                 The number of features in the targets.
+            bias (bool):
+                If true, apply a constant offset to the data.
             noise (bool):
                 Set false to disable noise.
             seed (Any):
-                A seed for the random number generator. Prefer to use strings
-                like 'train' and 'test'.
+                A seed for the random number generator.
+                Prefer strings like 'train' and 'test'.
         '''
-        seed = abs(hash(seed)) % (2 ** 32)
-
-        weight = np.arange(in_features * out_features)
-        weight = weight.reshape(in_features, out_features)
-        bias = np.arange(out_features)
-        self.weight = weight
-        self.bias = bias
+        # The true signal must always be the same for every instance.
+        rng = np.random.RandomState(0xDEADBEEF)
+        self.weight = rng.uniform(size=(in_features, out_features))
+        self.bias = rng.uniform(size=(out_features)) if bias else 0
 
         self.in_features = in_features
         self.out_features = out_features
         self.length = length
         self.noise = bool(noise)
-        self.seed = seed
+        self.seed = abs(hash(seed)) % (2 ** 32)
 
     def __len__(self):
         return self.length
