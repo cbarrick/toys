@@ -75,6 +75,10 @@ class LeastSquares(BaseEstimator):
                 explicit name like 'float32' and 'float64'. The default is
                 determined by `torch.get_default_dtype` and may be set with
                 `torch.set_default_dtype`.
+            underdetermined (bool):
+                The estimator issues a warning if the problem is
+                underdetermined, i.e. the batch size is less than the number
+                of features. Set this to true to ignore the warning.
             dry_run (bool):
                 If true, break from loops early. Useful for debugging.
             **kwargs:
@@ -96,17 +100,21 @@ class LeastSquares(BaseEstimator):
         batch_size = kwargs.setdefault('batch_size', len(dataset))
         max_epochs = kwargs.setdefault('max_epochs', 1)
         dtype = kwargs.setdefault('dtype', torch.get_default_dtype())
+        underdetermined = kwargs.setdefault('underdetermined', False)
         dry_run = kwargs.setdefault('dry_run', False)
 
+        batch_size = min(batch_size, len(dataset))
         dtype = parse_dtype(dtype)
 
         x, y = dataset[0]
         in_features = len(x)
         out_features = len(y)
 
-        if batch_size < in_features or len(dataset) < in_features:
-            logger.warning('least squares problem is under determined')
-            logger.warning(f'consider using a batch_size of at least {in_features}')
+        if not underdetermined and batch_size < in_features or len(dataset) < in_features:
+            logger.warning('least squares problem is underdetermined')
+            logger.warning(f'  this means that the batch size is less than the number of features')
+            logger.warning(f'  batch_size={batch_size}, features={in_features}')
+            logger.warning(f'  set underdetermined=True to disable this warning')
 
         if learn_bias:
             x_mean = Mean(dim=0)
