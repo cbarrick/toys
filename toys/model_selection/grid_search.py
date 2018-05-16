@@ -150,15 +150,18 @@ class GridSearchCV(BaseEstimator):
             cv_results = []
             results = sorted(results, key=by_params)
             for params, group in groupby(results, by_params):
-                scores = tuple(result['score'] for result in group)
+                scores = tuple(r['score'] for r in group)
                 mean_score = np.mean(scores, axis=0)
                 if not np.isscalar(mean_score):
                     mean_score = tuple(mean_score)
-                cv_results.append({
+                result = {
                     'params': dict(params),
                     'mean_score': mean_score,
-                    'scores': scores,
-                })
+                }
+                for i, score in enumerate(scores):
+                    key = f'score[{i}]'
+                    result[key] = score
+                cv_results.append(result)
 
             cv_results = sorted(cv_results, key=by_rank, reverse=True)
             return cv_results
