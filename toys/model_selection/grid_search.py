@@ -79,6 +79,9 @@ class GridSearchCV(BaseEstimator):
                 the validation instances.
             metric (str or Metric or Sequence[str or Metric]):
                 A metric or metrics to measure the goodness of fit of a model.
+            minimize (bool):
+                Set to true to choose the parameters which score the lowest.
+                The default is false.
             n_jobs (int or None):
                 The number of worker processes. If 0, all work is done in the
                 main process. If None, use the value of `os.cpu_count()`.
@@ -110,6 +113,7 @@ class GridSearchCV(BaseEstimator):
         param_grid = kwargs.setdefault('param_grid', None)
         cv = kwargs.setdefault('cv', 3)
         metric = kwargs.setdefault('metric', 'negative_mean_squared_error')
+        minimize = kwargs.setdefault('minimize', False)
         n_jobs = kwargs.setdefault('n_jobs', 0)
         dry_run = kwargs.setdefault('dry_run', False)
 
@@ -152,18 +156,27 @@ class GridSearchCV(BaseEstimator):
             for params, group in groupby(results, by_params):
                 scores = tuple(r['score'] for r in group)
                 mean_score = np.mean(scores, axis=0)
+
+                # When using multiple metrics, mean_score will be an array.
+                # These arrays cannot be sorted. Casting to a tuple allows
+                # them to be sorted lexicographically, i.e. the first metric
+                # determines the ranking in the cv_results.
                 if not np.isscalar(mean_score):
                     mean_score = tuple(mean_score)
+
                 result = {
                     'params': dict(params),
                     'mean_score': mean_score,
                 }
+
                 for i, score in enumerate(scores):
                     key = f'score[{i}]'
                     result[key] = score
+
                 cv_results.append(result)
 
-            cv_results = sorted(cv_results, key=by_rank, reverse=True)
+            reverse = not minimize
+            cv_results = sorted(cv_results, key=by_rank, reverse=reverse)
             return cv_results
 
         if n_jobs == 0:
@@ -181,7 +194,7 @@ class GridSearchCV(BaseEstimator):
                 results = pool.imap(run, jobs())
                 cv_results = combine(results)
 
-        best_result = cv_results[-1]
+        best_result = cv_results[0]
         best_params = best_result['params']
         full_params = {**kwargs, **best_params}
         best_estimator = TunedEstimator(estimator, full_params, cv_results)

@@ -16,6 +16,7 @@ cross_val = GridSearchCV(
     estimator = LeastSquares(),
     cv = 3,
     metric = metric,
+    minimize = True,
 )
 
 estimator = cross_val(train_data)
