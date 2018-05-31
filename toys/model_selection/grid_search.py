@@ -53,12 +53,15 @@ def search_param_grid(grid):
 
 
 class GridSearchCV(BaseEstimator):
-    def fit(self, *datasets, **kwargs):
+    def fit(self, *datasets, estimator=None, param_grid=None, cv=3, metric='f_score',
+            minimize=False, n_jobs=0, dry_run=False):
         '''Search for the best parameters of an model.
 
         Arguments:
             datasets (Dataset):
-                The datasets to fit.
+                The datasets to fit. If more than one are given, they are
+                combined using `toys.zip`. The target is taken from the last
+                column.
 
         Keyword Arguments:
             estimator (Estimator or None):
@@ -81,15 +84,11 @@ class GridSearchCV(BaseEstimator):
                 A metric or metrics to measure the goodness of fit of a model.
             minimize (bool):
                 Set to true to choose the parameters which score the lowest.
-                The default is false.
             n_jobs (int or None):
                 The number of worker processes. If 0, all work is done in the
                 main process. If None, use the value of `os.cpu_count()`.
             dry_run (bool):
                 If true, break from loops early. Useful for debugging.
-            **kwargs:
-                Additional keyword arguments are forwarded to the estimator
-                and `DataLoader`.
 
         Returns:
             best_estimator (TunedEstimator):
@@ -102,23 +101,10 @@ class GridSearchCV(BaseEstimator):
             ValueError:
                 The ``estimator`` argument must not be None. It must be set
                 either when constructing or calling `GridSearchCV`.
-
-        Todo:
-            - Use a global scope for kwargs to the default score functions.
         '''
-        if 'estimator' not in kwargs:
-            raise ValueError('estimator not given')
-
-        estimator = kwargs['estimator']
-        param_grid = kwargs.setdefault('param_grid', None)
-        cv = kwargs.setdefault('cv', 3)
-        metric = kwargs.setdefault('metric', 'negative_mean_squared_error')
-        minimize = kwargs.setdefault('minimize', False)
-        n_jobs = kwargs.setdefault('n_jobs', 0)
-        dry_run = kwargs.setdefault('dry_run', False)
-
         dataset = toys.zip(*datasets)
         metric = parse_metric(metric)
+        assert estimator is not None
 
         if not callable(cv):
             cv = k_fold(cv)
@@ -139,9 +125,8 @@ class GridSearchCV(BaseEstimator):
         def run(job):
             (params, train_set, test_set, fold_number, param_number) = job
             logger.info(f'evaluating parameter set {param_number} on fold {fold_number}')
-            full_params = {**kwargs, **params}
-            model = estimator(train_set, **full_params)
-            score = metric(model, test_set, **full_params)
+            model = estimator(train_set, **params)
+            score = metric(model, test_set)
             return {
                 'params': tuple(params.items()),
                 'score': score,
@@ -196,7 +181,6 @@ class GridSearchCV(BaseEstimator):
 
         best_result = cv_results[0]
         best_params = best_result['params']
-        full_params = {**kwargs, **best_params}
-        best_estimator = TunedEstimator(estimator, full_params, cv_results)
+        best_estimator = TunedEstimator(estimator, best_params, cv_results)
 
         return best_estimator

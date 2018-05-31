@@ -14,11 +14,13 @@ from toys.parsers import parse_dtype, parse_loss, parse_optimizer
 class GradientDescent(BaseEstimator):
     '''A supervised stochastic gradient descent estimator for PyTorch modules.
     '''
-    def __init__(self, module=None, **kwargs):
-        kwargs['module'] = module
+    def __init__(self, ctor=None, **kwargs):
+        kwargs['ctor'] = ctor
         super().__init__(**kwargs)
 
-    def fit(self, dataset, **kwargs):
+    def fit(self, *datasets, ctor=None, classifier=True, loss_fn='cross_entropy',
+            optimizer='SGD:lr=1e-4', max_epochs=100, batch_size=1, device_ids=None,
+            stop_policy=None, patience=-1, dtype=None, dry_run=False, **kwargs):
         '''Trains a TorchModel.
 
         Users should not call this method directly, but instead call the
@@ -26,12 +28,13 @@ class GradientDescent(BaseEstimator):
 
         Arguments:
             datasets (Dataset):
-                The datasets to fit.
-                **TODO**: document expected format.
+                The datasets to fit. If more than one are given, they are
+                combined using `toys.zip`. The target is taken from the last
+                column.
 
         Keyword Arguments:
-            module (Module or None):
-                A constructor for the PyTorch module to train. The module may
+            ctor (Module or None):
+                A constructor for the PyTorch module to train. The ctor may
                 be specified either when constructing or calling this estimator
                 and MUST NOT be None. (Though None will successfully typecheck.)
             classifier (bool):
@@ -71,38 +74,35 @@ class GradientDescent(BaseEstimator):
                 If true, break from loops early. Useful for debugging.
             **kwargs:
                 Additional keyword arguments are forwarded to the module
-                constructor and `DataLoader`.
+                constructor. Common arguments include ``in_shape`` and
+                ``out_shape``.
 
         Returns:
             model (TorchModel):
                 A model wrapping the learned module. Note that the module is
                 moved to the CPU even if it was trained using GPUs.
         '''
+        dataset = toys.zip(*datasets)
+
         device_count = torch.cuda.device_count()
+        use_cuda = bool(device_count)
         all_devices = list(range(device_count))
+        device_ids = device_ids or all_devices
+
         never_stop = lambda _: False
+        stop_policy = stop_policy or never_stop
 
-        module = kwargs.setdefault('module', None)
-        classifier = kwargs.setdefault('classifier', True)
-        loss_fn = kwargs.setdefault('loss_fn', 'cross_entropy' if classifier else 'mse')
-        optimizer = kwargs.setdefault('optimizer', 'SGD:lr=1e-4')
-        max_epochs = kwargs.setdefault('max_epochs', 100)
-        batch_size = kwargs.setdefault('batch_size', 1)
-        device_ids = kwargs.setdefault('device_ids', all_devices)
-        stop_policy = kwargs.setdefault('stop_policy', never_stop)
-        patience = kwargs.setdefault('patience', -1)
-        dtype = kwargs.setdefault('dtype', torch.get_default_dtype())
-        dry_run = kwargs.setdefault('dry_run', False)
-
-        optimizer = parse_optimizer(optimizer)
-        loss_fn = parse_loss(loss_fn)
+        dtype = dtype or torch.get_default_dtype()
         dtype = parse_dtype(dtype)
-        use_cuda = bool(device_ids)
 
-        assert module is not None
-        mod = module(**kwargs)
+        loss_fn = parse_loss(loss_fn)
+
+        assert ctor is not None
+        mod = ctor(**kwargs)
         mod = mod.to(dtype).train()
         mod = DataParallel(mod, device_ids)
+
+        optimizer = parse_optimizer(optimizer)
         opt = optimizer(mod.parameters())
 
         # Helper to repeatedly print messages over each other on the same line.
@@ -125,7 +125,8 @@ class GradientDescent(BaseEstimator):
 
         # Perform one epoch of gradient descent.
         def train_epoch():
-            train_set = DataLoader(dataset, **kwargs)
+            # TODO: What's the best way to get DataLoader config from the user?
+            train_set = DataLoader(dataset, batch_size=batch_size)
             train_loss = Mean()
             n = len(train_set)
             for i, batch in enumerate(train_set):

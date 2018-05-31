@@ -30,7 +30,8 @@ class LeastSquaresModule(Module):
 
 
 class LeastSquares(BaseEstimator):
-    def fit(self, *datasets, **kwargs):
+    def fit(self, *datasets, learn_bias=True, batch_size=None, max_epochs=1, dtype=None,
+            underdetermined=False, dry_run=False):
         '''Trains a least squares model.
 
         Users should not call this method directly, but instead call the
@@ -38,13 +39,12 @@ class LeastSquares(BaseEstimator):
 
         Arguments:
             datasets (Dataset):
-                The dataset to fit. At least one must be given. If multiple
-                datasets are given, the columns from all datasets are combined
-                into a single dataset. The rightmost column is treated as the
-                target and the reset as inputs.
+                The datasets to fit. If more than one are given, they are
+                combined using `toys.zip`. The target is taken from the last
+                column.
 
         Keyword Arguments:
-            bias (bool):
+            learn_bias (bool):
                 If true (the default), learn an additive bias/intercept term.
                 If false, the intercept is always 0.
             batch_size (int):
@@ -65,8 +65,6 @@ class LeastSquares(BaseEstimator):
                 of features. Set this to true to ignore the warning.
             dry_run (bool):
                 If true, break from loops early. Useful for debugging.
-            **kwargs:
-                Additional keyword arguments are forwarded to the `DataLoader`.
 
         Returns:
             model (TorchModel):
@@ -74,26 +72,20 @@ class LeastSquares(BaseEstimator):
                 expects $n$ inputs where $n$ is the number of input columns
                 in the training data.
         '''
-        assert 0 < len(datasets)
-        dataset = toys.flatten(*datasets, supervised=True)
+        dataset = toys.zip(*datasets)
+        dataset = toys.flatten(dataset, supervised=True)
 
-        # Note that the keyword arg `bias` is bound to the local var `learn_bias`.
-        # The local var called `bias` holds the actual learned bias.
-        learn_bias = kwargs.setdefault('bias', True)
-        batch_size = kwargs.setdefault('batch_size', len(dataset))
-        max_epochs = kwargs.setdefault('max_epochs', 1)
-        dtype = kwargs.setdefault('dtype', torch.get_default_dtype())
-        underdetermined = kwargs.setdefault('underdetermined', False)
-        dry_run = kwargs.setdefault('dry_run', False)
-
+        batch_size = batch_size or len(dataset)
         batch_size = min(batch_size, len(dataset))
+
+        dtype = dtype or torch.get_default_dtype()
         dtype = parse_dtype(dtype)
 
         x, y = dataset[0]
         in_features = len(x)
         out_features = len(y)
 
-        if not underdetermined and batch_size < in_features or len(dataset) < in_features:
+        if not underdetermined and batch_size < in_features:
             logger.warning('least squares problem is underdetermined')
             logger.warning(f'  this means that the batch size is less than the number of features')
             logger.warning(f'  batch_size={batch_size}, features={in_features}')
@@ -102,7 +94,7 @@ class LeastSquares(BaseEstimator):
         if learn_bias:
             x_mean = Mean(dim=0)
             y_mean = Mean(dim=0)
-            for x, y in DataLoader(dataset, **kwargs):
+            for x, y in DataLoader(dataset, batch_size=batch_size):
                 x_mean.accumulate(x)
                 y_mean.accumulate(y)
             x_mean = x_mean.reduce()
@@ -110,7 +102,7 @@ class LeastSquares(BaseEstimator):
 
         weight = Mean(dim=0)
         for i in range(max_epochs):
-            for x, y in DataLoader(dataset, **kwargs):
+            for x, y in DataLoader(dataset, batch_size=batch_size):
                 if learn_bias:
                     x -= x_mean
                     y -= y_mean

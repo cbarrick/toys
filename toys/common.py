@@ -176,16 +176,16 @@ def zip(*datasets):
         return Zip(*datasets)
 
 
-def flatten(*datasets, supervised=True):
-    '''Returns a dataset combining the columns of the given datasets into a
-    a single column, whose shape is flattened.
+def flatten(dataset, supervised=True):
+    '''Returns a dataset whose columns are flattened and concatenated together.
 
-    In supervised mode, the rightmost column is flattened but not combined
-    into the main column.
+    In supervised mode, the rightmost column is flattened but is kept as a
+    separate column. This is for supervised estimators which expect a target
+    value in a separate column.
 
     Arguments:
-        datasets (Dataset):
-            The datasets to flatten.
+        dataset (Dataset):
+            The dataset to flatten.
         supervised (bool):
             Operate in supervised mode.
 
@@ -195,7 +195,6 @@ def flatten(*datasets, supervised=True):
             a single column with a flat shape. If supervised is True, the
             dataset contains two columns with flat shape.
     '''
-    dataset = zip(*datasets)  # NOTE: zip is overloaded in this module
     cols = dataset[0]
 
     if supervised:
