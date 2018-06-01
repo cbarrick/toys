@@ -1,6 +1,5 @@
 from logging import getLogger
-from typing import Any, Callable, Dict, Sequence, Mapping
-from itertools import groupby
+from typing import Sequence, Mapping
 
 import numpy as np
 import pandas as pd
@@ -9,17 +8,14 @@ import torch
 from torch import multiprocessing as mp
 
 import toys
-from toys.common import BaseEstimator, Estimator, Model, TunedEstimator
-from toys.metrics import Metric
+from toys.common import BaseEstimator, TunedEstimator
 from toys.parsers import parse_metric
+from toys.typing import CrossValSplitter, Estimator, Metric, Model, ParamGrid
 
-from .cross_val import k_fold, CrossValSplitter
+from .cross_val import k_fold
 
 
 logger = getLogger(__name__)
-
-
-ParamGrid = Mapping[str, Sequence]
 
 
 def combinations(grid):

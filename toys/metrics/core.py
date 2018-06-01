@@ -5,9 +5,7 @@ import torch
 
 import toys
 from toys.parsers import parse_metric
-
-
-Metric = Callable
+from toys.typing import Metric
 
 
 class MultiMetric(Metric):

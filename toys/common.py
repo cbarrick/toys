@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Tuple
+from typing import Any, Dict
 
 import numpy as np
 import pandas as pd
@@ -11,16 +11,7 @@ from torch.utils.data import DataLoader
 import toys
 from toys.metrics import Accumulator
 from toys.parsers import parse_dtype, parse_metric
-
-
-try:
-    from typing import Protocol
-except ImportError:
-    from abc import ABC as Protocol
-
-
-Model = Callable
-Estimator = Callable
+from toys.typing import Model, Estimator, Dataset
 
 
 class BaseEstimator(ABC):
@@ -45,7 +36,7 @@ class BaseEstimator(ABC):
         '''Construct an estimator.
 
         Arguments:
-            **kwargs (Any):
+            **kwargs:
                 Overrides the default keyword arguments.
         '''
         super().__init__()
@@ -163,18 +154,6 @@ class TorchModel(Model):
             if isinstance(x, np.ndarray): x = torch.from_numpy(x)
             x = x.to(self.device, self.dtype)
             yield x
-
-
-class Dataset(Protocol):
-    '''The Dataset protocol.
-    '''
-    @abstractmethod
-    def __len__(self):
-        raise NotImplementedError
-
-    @abstractmethod
-    def __getitem__(self, index):
-        raise NotImplementedError
 
 
 class Subset(Dataset):

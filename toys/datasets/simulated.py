@@ -3,7 +3,7 @@ from typing import Any, Sequence
 import numpy as np
 
 import toys
-from toys.common import Dataset
+from toys.typing import Dataset
 
 
 class SimulatedPolynomial(Dataset):

@@ -87,10 +87,9 @@ E.g.::
 
     import toys
     from toys.metrics import Mean
-    from toys.common import Dataset
+    from toys.typing import Dataset
 
-    from .estimator import Estimator, Model
-    from .torch import TorchModel
+    from .cross_val import k_fold
 
 Code layout
 -----------

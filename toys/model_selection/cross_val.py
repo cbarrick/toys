@@ -1,12 +1,7 @@
-from typing import Callable, Iterable, Sequence, Tuple
-
 import numpy as np
 
 import toys
-from toys.common import Dataset
-
-
-CrossValSplitter = Callable[[Dataset], Iterable[Tuple[Sequence[int], Sequence[int]]]]
+from toys.typing import CrossValSplitter, Dataset
 
 
 def k_fold(k=3, shuffle=True):

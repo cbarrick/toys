@@ -6,10 +6,10 @@ import torch
 from torch.nn import Module, Parameter
 
 import toys
-from toys.common import Dataset
 from toys.common import BaseEstimator, TorchModel
 from toys.metrics import Mean
 from toys.parsers import parse_dtype
+from toys.typing import Dataset
 
 
 logger = getLogger(__name__)
