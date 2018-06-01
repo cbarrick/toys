@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Callable, Tuple
 
 import numpy as np
+import pandas as pd
 
 import torch
 from torch.nn import Module
@@ -94,7 +95,7 @@ class TunedEstimator(BaseEstimator):
         super().__init__()
         self.estimator = estimator
         self.params = params
-        self.cv_results = cv_results or {}
+        self.cv_results = pd.DataFrame(cv_results)
 
     def fit(self, *inputs, **hyperparams):
         params = {**self.params, **hyperparams}

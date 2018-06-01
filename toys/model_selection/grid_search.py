@@ -3,6 +3,7 @@ from typing import Any, Callable, Dict, Sequence, Mapping
 from itertools import groupby
 
 import numpy as np
+import pandas as pd
 
 import torch
 from torch import multiprocessing as mp
@@ -22,19 +23,20 @@ logger = getLogger(__name__)
 ParamGrid = Mapping[str, Sequence]
 
 
-def search_param_grid(grid):
-    '''Iterates over parameter sets in a grid.
+def combinations(grid):
+    '''Iterates over all combinations of parameters in the grid.
 
     Arguments:
         grid (ParamGrid or Iterable[ParamGrid] or None):
-            A mapping from parameter names to sequences of allowed values, or
-            an iterable of such grids. If the grid is None or empty, a single
-            empty dict will be generated.
+            A parameter grid, list of parameter grids or None. A parameter grid
+            is a mapping from parameter names to sequences of allowed values.
+
     Yields:
         A dictionary mapping parameter names to values.
     '''
     if not grid:
         yield {}
+
     elif isinstance(grid, Mapping):
         indices = {k:0 for k in grid.keys()}
         lens = {k:len(v) for k, v in grid.items()}
@@ -47,21 +49,21 @@ def search_param_grid(grid):
                     indices[k] = 0
                 else:
                     break
+
     else:
         for g in grid:
-            yield from search_param_grid(g)
+            yield from combinations(g)
 
 
 class GridSearchCV(BaseEstimator):
     def fit(self, *datasets, estimator=None, param_grid=None, cv=3, metric='f_score',
             minimize=False, n_jobs=0, dry_run=False):
-        '''Search for the best parameters of an model.
+        '''Learn the best hyper-parameters of an estimator.
 
         Arguments:
             datasets (Dataset):
                 The datasets to fit. If more than one are given, they are
-                combined using `toys.zip`. The target is taken from the last
-                column.
+                combined using `toys.zip`.
 
         Keyword Arguments:
             estimator (Estimator or None):
@@ -104,82 +106,41 @@ class GridSearchCV(BaseEstimator):
         '''
         dataset = toys.zip(*datasets)
         metric = parse_metric(metric)
-        assert estimator is not None
+
+        if estimator is None:
+            raise TypeError('estimator must not be None')
+
+        if n_jobs != 0:
+            logger.warn('multiprocessing is not yet supported')
 
         if not callable(cv):
             cv = k_fold(cv)
 
-        # The algorithm below follows a map-reduce pattern for parallelism:
-        #
-        # 1. Jobs are generated for all combinations of parameters and folds.
-        # 2. Jobs executed, possibly in parallel, and mapped into scores.
-        # 3. Scores are reduced into cross validation results.
-
         def jobs():
-            for fold_number, (train, test) in enumerate(cv(dataset)):
-                for param_number, params in enumerate(search_param_grid(param_grid)):
+            for train, test in cv(dataset):
+                for params in combinations(param_grid):
                     train_set = Subset(dataset, train)
                     test_set = Subset(dataset, test)
-                    yield params, train_set, test_set, fold_number, param_number
+                    yield params, train_set, test_set
 
         def run(job):
-            (params, train_set, test_set, fold_number, param_number) = job
-            logger.info(f'evaluating parameter set {param_number} on fold {fold_number}')
+            (params, train_set, test_set) = job
             model = estimator(train_set, **params)
-            score = metric(model, test_set)
-            return {
-                'params': tuple(params.items()),
-                'score': score,
-            }
+            score = float(metric(model, test_set))
+            params = tuple(sorted(params))
+            return {'score':score, 'params':params}
 
         def combine(results):
-            by_params = lambda x: x['params']
-            by_rank = lambda x: x['mean_score']
+            results = pd.DataFrame(results)
+            results = results.groupby('params').mean().reset_index()
+            results = results.sort_values('score', ascending=minimize)
+            results['params'] = results['params'].apply(dict)
+            return results
 
-            cv_results = []
-            results = sorted(results, key=by_params)
-            for params, group in groupby(results, by_params):
-                scores = tuple(r['score'] for r in group)
-                mean_score = np.mean(scores, axis=0)
+        results = (run(j) for j in jobs())
+        cv_results = combine(results)
 
-                # When using multiple metrics, mean_score will be an array.
-                # These arrays cannot be sorted. Casting to a tuple allows
-                # them to be sorted lexicographically, i.e. the first metric
-                # determines the ranking in the cv_results.
-                if not np.isscalar(mean_score):
-                    mean_score = tuple(mean_score)
-
-                result = {
-                    'params': dict(params),
-                    'mean_score': mean_score,
-                }
-
-                for i, score in enumerate(scores):
-                    key = f'score[{i}]'
-                    result[key] = score
-
-                cv_results.append(result)
-
-            reverse = not minimize
-            cv_results = sorted(cv_results, key=by_rank, reverse=reverse)
-            return cv_results
-
-        if n_jobs == 0:
-            results = (run(j) for j in jobs())
-            cv_results = combine(results)
-        else:
-            # The 'fork' start method is required so that user scripts can
-            # execute experiments at the top level. Otherwise they must be
-            # protected with ``if __name__ == '__main__': ...``.
-            # WARNING: Windows doesn't have process forking.
-            # WARNING: Safely forking a multithreaded process is problematic.
-            logger.warn('multiprocessing is not fully supported')
-            ctx = mp.get_context('fork')
-            with ctx.Pool(n_jobs) as pool:
-                results = pool.imap(run, jobs())
-                cv_results = combine(results)
-
-        best_result = cv_results[0]
+        best_result = cv_results.iloc[0]
         best_params = best_result['params']
         best_estimator = TunedEstimator(estimator, best_params, cv_results)
 
