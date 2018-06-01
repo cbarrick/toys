@@ -5,5 +5,6 @@ from . import model_selection
 from . import parsers
 from . import supervised
 
-from .common import zip
+from .common import batches
 from .common import flatten
+from .common import zip

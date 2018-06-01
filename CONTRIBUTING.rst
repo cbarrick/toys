@@ -87,7 +87,7 @@ E.g.::
 
     import toys
     from toys.metrics import Mean
-    from toys.datasets.utils import Dataset, DataLoader
+    from toys.datasets.utils import Dataset
 
     from .estimator import Estimator, Model
     from .torch import TorchModel

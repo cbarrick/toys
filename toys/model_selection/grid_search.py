@@ -10,7 +10,7 @@ from torch import multiprocessing as mp
 
 import toys
 from toys.common import BaseEstimator, Estimator, Model, TunedEstimator
-from toys.datasets.utils import DataLoader, Subset
+from toys.datasets.utils import Subset
 from toys.metrics import Metric
 from toys.parsers import parse_metric
 

@@ -6,7 +6,7 @@ import torch
 from torch.nn import Module, Parameter
 
 import toys
-from toys.datasets.utils import DataLoader, Dataset
+from toys.datasets.utils import Dataset
 from toys.common import BaseEstimator, TorchModel
 from toys.metrics import Mean
 from toys.parsers import parse_dtype
@@ -94,7 +94,7 @@ class LeastSquares(BaseEstimator):
         if learn_bias:
             x_mean = Mean(dim=0)
             y_mean = Mean(dim=0)
-            for x, y in DataLoader(dataset, batch_size=batch_size):
+            for x, y in toys.batches(dataset, batch_size):
                 x_mean.accumulate(x)
                 y_mean.accumulate(y)
             x_mean = x_mean.reduce()
@@ -102,7 +102,7 @@ class LeastSquares(BaseEstimator):
 
         weight = Mean(dim=0)
         for i in range(max_epochs):
-            for x, y in DataLoader(dataset, batch_size=batch_size):
+            for x, y in toys.batches(dataset, batch_size):
                 if learn_bias:
                     x -= x_mean
                     y -= y_mean

@@ -4,7 +4,7 @@ from typing import Callable
 import torch
 
 import toys
-from toys.datasets.utils import Dataset, DataLoader
+from toys.datasets.utils import Dataset
 from toys.parsers import parse_metric
 
 
@@ -40,10 +40,9 @@ class Accumulator(ABC):
         '''
         raise NotImplementedError
 
-    def __call__(self, model, *inputs, **kwargs):
-        dry_run = kwargs.setdefault('dry_run', False)
-
-        for batch in DataLoader(*inputs, **kwargs):
+    def __call__(self, model, *datasets, dry_run=False):
+        dataset = toys.zip(*datasets)
+        for batch in toys.batches(dataset):
             if self.supervised:
                 *inputs, target = batch
                 prediction = model(*inputs)

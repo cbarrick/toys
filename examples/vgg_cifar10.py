@@ -34,6 +34,6 @@ print(tabulate(estimator.cv_results, headers='keys'))
 
 model = estimator(train_data)
 scorer = MultiMetric(('accuracy', 'f_score'))
-accuracy, f_score = scorer(model, test_data, batch_size=256)
+accuracy, f_score = scorer(model, test_data)
 print(f'Test accuracy: {accuracy:%}')
 print(f'Test f-score: {f_score:%}')

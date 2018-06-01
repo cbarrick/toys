@@ -6,9 +6,10 @@ import pandas as pd
 
 import torch
 from torch.nn import Module
+from torch.utils.data import DataLoader
 
 import toys
-from toys.datasets.utils import Dataset, DataLoader, Flat, Zip
+from toys.datasets.utils import Dataset, Flat, Zip
 from toys.metrics import Accumulator
 from toys.parsers import parse_dtype, parse_metric
 
@@ -213,3 +214,33 @@ def flatten(dataset, supervised=True):
 
     # If we've got this far, the dataset is already flat
     return dataset
+
+
+def batches(dataset, batch_size=0, **kwargs):
+    '''Iterates over a dataset in batches.
+
+    TODO: Document dataset hints.
+
+    Arguments:
+        dataset (Dataset):
+            The dataset to iterate over.
+        batch_size (int):
+            The maximum size of the batches.
+
+    Keyword Arguments:
+        **kwargs:
+            Keyword arguments are forwarded to `torch.utils.data.DataLoader`.
+
+    Returns:
+        batches (DataLoader):
+            A PyTorch data loader.
+    '''
+    hints = getattr(dataset, 'hints', {})
+    kwargs = {**hints, **kwargs}
+
+    if batch_size is 0 and 'batch_size' not in hints:
+            batch_size = len(dataset)
+
+    kwargs.setdefault('pin_memory', torch.cuda.is_available())
+    kwargs.setdefault('batch_size', batch_size)
+    return DataLoader(dataset, **kwargs)

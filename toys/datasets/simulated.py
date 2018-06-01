@@ -62,6 +62,13 @@ class SimulatedPolynomial(Dataset):
         y += self.bias + noise
         return x, y
 
+    @property
+    def hints(self):
+        return {
+            'shuffle': False,
+            'batch_size': 256,
+        }
+
 
 class SimulatedLinear(SimulatedPolynomial):
     '''A simulated linear dataset with gaussian noise.

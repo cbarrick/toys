@@ -6,7 +6,7 @@ from torch.optim import Optimizer
 
 import toys
 from toys.common import BaseEstimator, TorchModel
-from toys.datasets.utils import Dataset, DataLoader
+from toys.datasets.utils import Dataset
 from toys.metrics import Mean
 from toys.parsers import parse_dtype, parse_loss, parse_optimizer
 
@@ -125,8 +125,7 @@ class GradientDescent(BaseEstimator):
 
         # Perform one epoch of gradient descent.
         def train_epoch():
-            # TODO: What's the best way to get DataLoader config from the user?
-            train_set = DataLoader(dataset, batch_size=batch_size)
+            train_set = toys.batches(dataset, batch_size)
             train_loss = Mean()
             n = len(train_set)
             for i, batch in enumerate(train_set):

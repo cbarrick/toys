@@ -154,6 +154,13 @@ class _CIFAR(Dataset, ABC):
                 tar.extract(name, path=self.base_path)
 
     @property
+    def hints(self):
+        return {
+            'shuffle': False,
+            'batch_size': 256,
+        }
+
+    @property
     def path(self):
         filename = self.url.split('/')[-1]
         return self.base_path / filename

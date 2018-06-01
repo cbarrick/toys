@@ -1,5 +1,3 @@
-from .dataloader import DataLoader
-
 from .utils import Dataset
 from .utils import Flat
 from .utils import Subset

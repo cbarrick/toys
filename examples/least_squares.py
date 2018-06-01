@@ -22,5 +22,5 @@ print(tabulate(estimator.cv_results, headers='keys'))
 
 model = estimator(train_data)
 scorer = MeanSquaredError()
-mse = scorer(model, test_data, batch_size=256)
+mse = scorer(model, test_data)
 print(f'Test set mean squared error: {mse:.2e}')
