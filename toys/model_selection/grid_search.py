@@ -10,7 +10,6 @@ from torch import multiprocessing as mp
 
 import toys
 from toys.common import BaseEstimator, Estimator, Model, TunedEstimator
-from toys.datasets.utils import Subset
 from toys.metrics import Metric
 from toys.parsers import parse_metric
 
@@ -119,8 +118,8 @@ class GridSearchCV(BaseEstimator):
         def jobs():
             for train, test in cv(dataset):
                 for params in combinations(param_grid):
-                    train_set = Subset(dataset, train)
-                    test_set = Subset(dataset, test)
+                    train_set = toys.subset(dataset, train)
+                    test_set = toys.subset(dataset, test)
                     yield params, train_set, test_set
 
         def run(job):

@@ -4,7 +4,6 @@ from typing import Callable
 import torch
 
 import toys
-from toys.datasets.utils import Dataset
 from toys.parsers import parse_metric
 
 

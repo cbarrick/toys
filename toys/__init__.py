@@ -6,5 +6,7 @@ from . import parsers
 from . import supervised
 
 from .common import batches
+from .common import Dataset
 from .common import flatten
-from .common import zip
+from .common import subset
+from .common import zip_ as zip

@@ -3,7 +3,7 @@ from typing import Callable, Iterable, Sequence, Tuple
 import numpy as np
 
 import toys
-from toys.datasets.utils import Dataset
+from toys.common import Dataset
 
 
 CrossValSplitter = Callable[[Dataset], Iterable[Tuple[Sequence[int], Sequence[int]]]]
