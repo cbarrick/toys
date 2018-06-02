@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import Callable, Iterable, Mapping, Sequence, Tuple
+from typing import *
 
 
 # The Protocol type does not exist until Python 3.7.
@@ -21,6 +21,9 @@ class Dataset(Protocol):
     def __getitem__(self, index):
         raise NotImplementedError
 
+
+ArrayShape = Tuple[int, ...]
+DatasetShape = Union[Tuple[Union[ArrayShape, None], ...], None]
 
 CrossValSplitter = Callable[[Dataset], Iterable[Tuple[Sequence[int], Sequence[int]]]]
 Estimator = Callable

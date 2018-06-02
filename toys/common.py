@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from io import StringIO
 from typing import Any, Dict
 
 import numpy as np
@@ -156,6 +157,58 @@ class TorchModel(Model):
             yield x
 
 
+# Dataset utils
+# --------------------------------------------------
+
+def common_shape(shape1, shape2):
+    if shape1 == shape2:
+        return shape1
+    if np.isscalar(shape1) or np.isscalar(shape2):
+        return None
+    if len(shape1) != len(shape2):
+        return None
+    return tuple(common_shape(a, b) for a, b in zip(shape1, shape2))
+
+
+def shape(dataset):
+    '''Infer the shape of the dataset.
+
+    This function will sample up to four rows from the dataset to identify
+    if any part of the shape is variable.
+
+    Arguments:
+        dataset (Dataset):
+            The dataset whose shape will be checked.
+
+    Returns:
+        shape (DatasetShape):
+            A tuple of array shapes, one for each column. If any part of the
+            overall shape is variable, it is replaced by ``None``.
+    '''
+    get_shape = lambda x: getattr(x, 'shape', ())
+
+    n = len(dataset)
+    if n == 0: return None
+
+    row1 = dataset[np.random.randint(n)]
+    row2 = dataset[np.random.randint(n)]
+    row3 = dataset[np.random.randint(n)]
+    row4 = dataset[np.random.randint(n)]
+
+    shape1 = tuple(get_shape(a) for a in row1)
+    shape2 = tuple(get_shape(a) for a in row2)
+    shape3 = tuple(get_shape(a) for a in row3)
+    shape4 = tuple(get_shape(a) for a in row4)
+
+    shape5 = common_shape(shape1, shape2)
+    shape6 = common_shape(shape3, shape4)
+
+    return common_shape(shape5, shape6)
+
+
+# Subset
+# --------------------------------------------------
+
 class Subset(Dataset):
     '''A non-empty subset of some other dataset.
 
@@ -179,6 +232,13 @@ class Subset(Dataset):
         cols = self.dataset[i]
         return cols
 
+    def __repr__(self):
+        return f'Subset({repr(self.dataset)}, {repr(self.indices)})'
+
+    @property
+    def hints(self):
+        return getattr(self.dataset, 'hints', {})
+
 
 def subset(dataset, indices):
     '''Select a subset of some dataset by row indices.
@@ -192,12 +252,20 @@ def subset(dataset, indices):
     return Subset(dataset, indices)
 
 
+# Zip
+# --------------------------------------------------
+
 class Zip(Dataset):
-    '''Zip many datasets into one, like `builtins.zip`.
+    '''Combines the columns of many datasets into one.
     '''
     def __init__(self, *datasets):
-        assert 0 < len(datasets)
-        for d in datasets: assert len(d) == len(datasets[0])
+        if len(datasets) == 0:
+            raise TypeError('Zip() requires at least 1 dataset.')
+
+        for d in datasets:
+            if len(d) != len(datasets[0]):
+                raise ValueError('Zip() requires all datasets to be the same length.')
+
         self.datasets = datasets
 
     def __len__(self):
@@ -207,13 +275,27 @@ class Zip(Dataset):
         columns = []
         for dataset in self.datasets:
             x = dataset[index]
-            if isinstance(x, tuple):
-                columns.extend(x)
-            else:
-                columns.append(x)
+            columns.extend(x)
         return tuple(columns)
 
+    def __repr__(self):
+        buf = StringIO()
+        buf.write('Zip(')
+        datasets = (repr(ds) for ds in self.datasets)
+        print(*datasets, sep=', ', end=')', file=buf)
+        return buf.getvalue()
 
+    @property
+    def hints(self):
+        ret = {}
+        for ds in reversed(self.datasets):
+            sub = getattr(ds, 'hints', {})
+            ret.update(sub)
+        return ret
+
+
+# This is reexported as toys.zip.
+# The underscore is used here to prevent overriding builtins.zip.
 def zip_(*datasets):
     '''Returns a dataset with all of the columns of the given datasets.
 
@@ -225,11 +307,74 @@ def zip_(*datasets):
         zipped (Dataset):
             The combined dataset.
     '''
+    if len(datasets) == 0:
+        raise TypeError('zip() requires at least 1 dataset.')
     if len(datasets) == 1:
         return datasets[0]
     else:
         return Zip(*datasets)
 
+
+# Concat
+# --------------------------------------------------
+
+class Concat(Dataset):
+    '''Combines the rows of many datasets into one.
+    '''
+    def __init__(self, *datasets):
+        if len(datasets) == 0:
+            raise TypeError('Concat() requires at least 1 dataset.')
+
+        self.lens = tuple(len(d) for d in datasets)
+        self.datasets = datasets
+
+    def __len__(self):
+        return sum(self.lens)
+
+    def __getitem__(self, index):
+        for i, n in enumerate(self.lens):
+            if n <= index:
+                index -= n
+            else:
+                return self.datasets[i][index]
+
+    def __repr__(self):
+        buf = StringIO()
+        buf.write('Concat(')
+        datasets = (repr(ds) for ds in self.datasets)
+        print(*datasets, sep=', ', end=')', file=buf)
+        return buf.getvalue()
+
+    @property
+    def hints(self):
+        ret = {}
+        for ds in reversed(self.datasets):
+            sub = getattr(ds, 'hints', {})
+            ret.update(sub)
+        return ret
+
+
+def concat(*datasets):
+    '''Returns a dataset with all of the rows of the given datasets.
+
+    Arguments:
+        datasets (Dataset):
+            The datasets to combine.
+
+    Returns:
+        concatenated (Dataset):
+            The combined dataset.
+    '''
+    if len(datasets) == 0:
+        raise TypeError('concat() requires at least 1 dataset.')
+    if len(datasets) == 1:
+        return datasets[0]
+    else:
+        return Concat(*datasets)
+
+
+# Flatten
+# --------------------------------------------------
 
 class Flat(Dataset):
     '''Flatten and concatenate the columns of a dataset.
@@ -257,6 +402,13 @@ class Flat(Dataset):
             inputs.append(target)
             inputs = np.concatenate(inputs)
             return (inputs,)
+
+    def __repr__(self):
+        return f'Flat({repr(self.base)}, supervised={repr(self.supervised)})'
+
+    @property
+    def hints(self):
+        return self.base.hints
 
 
 def flatten(dataset, supervised=True):
@@ -296,6 +448,9 @@ def flatten(dataset, supervised=True):
     # If we've got this far, the dataset is already flat
     return dataset
 
+
+# Batching
+# --------------------------------------------------
 
 def batches(dataset, batch_size=0, **kwargs):
     '''Iterates over a dataset in batches.
