@@ -1,0 +1,12 @@
+body {
+	background-image: url("./backgrounds/funky-lines.png") !important;
+}
+
+.rst-content .caption {
+	/* Reset caption fonts in the main body to be like normal paragraphs */
+	font-size: 100% !important;
+	font-family: "Lato","proxima-nova","Helvetica Neue",Arial,sans-serif !important;
+
+	/* Don't reset font-weight */
+	/* font-weight: normal !important; */
+}

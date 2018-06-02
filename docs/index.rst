@@ -1,20 +1,25 @@
-.. Toys documentation master file, created by
-   sphinx-quickstart on Sun Apr 22 14:00:26 2018.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+================================================================================
+               Toys: Friendly machine learning for rapid research
+================================================================================
 
-Welcome to Toys's documentation!
-================================
+Toys is a framework for machine learning experiments inspired by Scikit-learn and built with PyTorch.
+
+
+Documentation
+==================================================
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+   :maxdepth: 1
+   :caption: User Guides
+
+   guides/datasets
 
 
+Contributing
+==================================================
 
-Indices and tables
-==================
+All are welcome to contribute. But because the project is so young, coordination is key. Please reach out on the issue tracker, or in person if you are around UGA, if you are interested in contributing.
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+The `contributing file`_ contains style guides and other useful guidelines for contributing to the project.
+
+.. _contributing file: https://github.com/cbarrick/toys/tree/master/CONTRIBUTING.rst
