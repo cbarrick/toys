@@ -12,7 +12,7 @@ from toys.common import BaseEstimator, TunedEstimator
 from toys.parsers import parse_metric
 from toys.typing import CrossValSplitter, Estimator, Metric, Model, ParamGrid
 
-from .cross_val import k_fold
+from .cross_val import KFold
 
 
 logger = getLogger(__name__)
@@ -109,14 +109,12 @@ class GridSearchCV(BaseEstimator):
             logger.warn('multiprocessing is not yet supported')
 
         if not callable(cv):
-            cv = k_fold(cv)
+            cv = KFold(cv)
 
         def jobs():
             for train, test in cv(dataset):
                 for params in combinations(param_grid):
-                    train_set = toys.subset(dataset, train)
-                    test_set = toys.subset(dataset, test)
-                    yield params, train_set, test_set
+                    yield params, train, test
 
         def run(job):
             (params, train_set, test_set) = job
