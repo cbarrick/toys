@@ -38,7 +38,9 @@ class KFold(CrossValSplitter):
         indices = np.arange(len(dataset))
         if self.shuffle: np.random.shuffle(indices)
         splits = np.array_split(indices, self.k)
-        for test in splits:
-            train = [s for s in splits if s is not test]
-            train = np.concatenate(train)
-            yield toys.subset(dataset, train), toys.subset(dataset, test)
+        for test_indices in splits:
+            train_indices = [s for s in splits if s is not test_indices]
+            train_indices = np.concatenate(train_indices)
+            train = toys.subset(dataset, train_indices)
+            test = toys.subset(dataset, test_indices)
+            yield train, test

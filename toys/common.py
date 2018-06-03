@@ -9,6 +9,10 @@ import torch
 from torch.nn import Module, DataParallel
 from torch.utils.data import DataLoader
 
+
+# Core protocols and types
+# --------------------------------------------------
+
 # The Protocol type does not exist until Python 3.7.
 # TODO: Remove the try-except when Python 3.6 support is dropped.
 try:
@@ -53,109 +57,113 @@ class Metric(Protocol):
         raise NotImplementedError
 
 
+# Type aliases
+# --------------------------------------------------
+# These are for documentation and type hinting. There is no need to use them
+# at runtime. See the API docs and user guides.
+
 ArrayShape = Tuple[int, ...]
-DatasetShape = Union[Tuple[Union[ArrayShape, None], ...], None]
-CrossValSplitter = Callable[[Dataset], Iterable[Tuple[Sequence[int], Sequence[int]]]]
+VariableArrayShape = Tuple[Optional[int], ...]
+DatasetShape = Optional[Tuple[Optional[VariableArrayShape], ...]]
+Fold = Tuple[Dataset, Dataset]
+CrossValSplitter = Callable[[Dataset], Iterable[Fold]]
 ParamGrid = Mapping[str, Sequence]
 
+
+# Common classes
+# --------------------------------------------------
 
 class BaseEstimator(ABC):
     '''A useful base class for estimators.
 
-    An estimator is any callable that returns a model. The `BaseEstimator` base
-    class provides a convenient API for implementing estimators.
+    An estimator is any callable that accepts zero or more inputs to be fit
+    against, along with keyword arguments for any hyperparameters, and returns
+    a model. This class provides a convenient API for estimators, allowing the
+    default keyword arguments to be set by the constructor.
 
-    Instances of `BasesEstimator` follow the estimator protocol: they are
-    functions that take a dataset to fit and keyword arguments for any
-    hyperparameters. The constructor of a `BaseEstimator` accepts the very
-    same keyword arguments. When a `BaseEstimator` is called directly (or via
-    `__call__`), it delegates to `fit`, forwarding all keyword arguments as
-    well as those passed to the constructor. In case of conflict, the arguments
-    passed directly take priority.
+    When the estimator is invoked as a function, it delegates to the abstract
+    method :meth:`fit`, taking any unset keyword arguments from those passed
+    to the constructor. Subclasses then implement their estimator logic in
+    :meth:`fit`.
 
-    This upshot is that the constructor allows you to set the default
-    hyperparameters.
+    Attributes:
+        defaults (Dict[str, Any]):
+            The default kwargs for the instance.
     '''
 
-    def __init__(self, **kwargs):
-        '''Construct an estimator.
-
-        Arguments:
-            **kwargs:
-                Overrides the default keyword arguments.
-        '''
+    def __init__(self, **defaults):
         super().__init__()
-        self._kwargs = kwargs
+        self.defaults = defaults
 
-    def __call__(self, *inputs, **kwargs):
-        '''Construct a model, delegating to `fit`.
-
-        Returns:
-            model (Model):
-                The model returned by `fit`.
-        '''
-        kwargs = {**self._kwargs, **kwargs}
-        return self.fit(*inputs, **kwargs)
+    def __call__(self, *args, **kwargs):
+        kwargs = {**self.defaults, **kwargs}
+        return self.fit(*args, **kwargs)
 
     @abstractmethod
-    def fit(self, *inputs, **kwargs):
-        '''Constructs a model.
+    def fit(self, *args, **kwargs):
+        '''Fit a model.
 
         Subclasses must implement this method.
 
-        The return value can be any callable, and is usually some learned
-        function. Meta-estimators like `GridSearchCV` return other estimators.
-
-        Arguments:
-            inputs (Dataset):
-                The inputs to fit.
-            **kwargs:
-                The hyperparameters to use while training the model.
+        .. note::
+            The recipe for fitting the model is defined by this method, but
+            calling it directly circumvents the default keyword arguments set
+            by the constructor. This is almost never desired. Always invoke
+            the estimator instance rather than this method.
 
         Returns:
-            model (Model):
-                Any arbitrary callable.
+            Model:
+                The fitted model.
         '''
         raise NotImplementedError()
 
 
 class TunedEstimator(BaseEstimator):
-    '''A wrapper to override the default hyperparameters of an estimator.
+    '''An estimator wrapped with a with default kwargs.
 
-    The new hyperparameters supplied by a `TunedEstimator`s are often learned
-    by a meta-estimator, like `toys.model_selection.GridSearchCV`.
+    These are often returned by meta-estimators performain a parameter search,
+    e.g. :class:`~toys.model_selection.GridSearchCV`.
 
     Attributes:
         estimator (Estimator):
             The underlying estimator.
-        params (Dict[str, Any]):
-            The best hyperparameters found by the parameter search.
-        cv_results (Dict[str, Any] or None):
-            Overall results of the search which generated this estimator.
+        kwargs (Dict[str, Any]):
+            Overrides for the default kwargs of the estimator.
+        cv_results (pandas.DataFrame or Dict or None):
+            An optional table attached to the instance.
     '''
-    def __init__(self, estimator, params, cv_results=None):
+    def __init__(self, estimator, kwargs, cv_results=None):
         super().__init__()
         self.estimator = estimator
-        self.params = params
+        self.kwargs = kwargs
         self.cv_results = pd.DataFrame(cv_results)
 
-    def fit(self, *inputs, **hyperparams):
-        params = {**self.params, **hyperparams}
-        model = self.estimator(*inputs, **params)
+    def fit(self, *args, **kwargs):
+        kwargs = {**self.kwargs, **kwargs}
+        model = self.estimator(*args, **kwargs)
         return model
 
 
 class TorchModel(Module):
     '''A convenience wrapper around PyTorch modules.
 
-    .. todo::
-        Document the conveniences.
+    The model is distributed over all available GPUs by default.
+
+    The model has a dtype specified during construction, and the underlying
+    module and all inputs are automatically cast to this dtype. This largely
+    removes the user from manual dtype casting.
+
+    The model distinguishes between training and evaluation modes.
+    In training/evaluation mode, ``autograd`` is enabled/disabled explicitly.
+    This largely removes the user from manual autograd management. When
+    a :class:`TorchModel` is constructed, it is set to training mode.
+    Estimators should return models in evaluation mode.
 
     Arguments:
         module (Module):
             The module being wrapped.
         device_ids (Sequence[int]):
-            A list of CUDA device IDs to use. The default is all devices.
+            A list of devices to use. The default is all available.
         dtype (str or torch.dtype):
             The dtype to which the module and inputs are cast.
     '''
@@ -174,33 +182,63 @@ class TorchModel(Module):
 
         self.train()
 
-    def forward(self, *inputs):
+    def __call__(self, *args, **kwargs):
+        '''Invoke the model.
+        '''
+        return super().__call__(*args, **kwargs)
+
+    def forward(self, *args, **kwargs):
         dtype = self.dtype
         module = self.module
         train_mode = self._train_mode
 
-        inputs = list(inputs)
-        for i, x in enumerate(inputs):
-            if isinstance(x, np.ndarray):
-                x = torch.from_numpy(x, dtype=dtype)
-            x = x.to(dtype)
-            inputs[i] = x
-
         with torch.autograd.set_grad_enabled(train_mode):
-            y = module(*inputs)
-
-        if not train_mode:
-            y = y.numpy()
+            args = list(args)
+            for i, x in enumerate(args):
+                if isinstance(x, np.ndarray):
+                    x = torch.from_numpy(x, dtype=dtype)
+                x = x.to(dtype)
+                args[i] = x
+            y = module(*args, **kwargs)
 
         return y
 
     def train(self, mode=True):
+        '''Put the module in training mode. The opposite of :meth:`eval`.
+
+        In training mode, autograd is enabled. The wrapped module is
+        recursivly set to training mode.
+
+        Arguments:
+            mode (bool):
+                If ``True``, sets the module to training mode. If ``False``,
+                sets the module to evaluation mode, equivalent to :meth:`eval`.
+
+        Returns:
+            TorchModel: self
+        '''
         self._train_mode = mode
         self.module.train(mode)
         return self
 
+    def eval(self, mode=True):
+        '''Put the module in evaluation mode. The opposite of :meth:`train`.
 
-# Dataset utils
+        In evaluation mode, autograd is disabled, and the wrapped module is
+        recursivly set to evaluation mode.
+
+        Arguments:
+            mode (bool):
+                If ``True``, sets the module to evaluation mode. If ``False``,
+                sets the module to training mode, equivalent to :meth:`train`.
+
+        Returns:
+            TorchModel: self
+        '''
+        return self.train(not mode)
+
+
+# Data handling
 # --------------------------------------------------
 
 def common_shape(shape1, shape2):
@@ -224,9 +262,18 @@ def shape(dataset):
             The dataset whose shape will be checked.
 
     Returns:
-        shape (DatasetShape):
+        DatasetShape:
             A tuple of array shapes, one for each column. If any part of the
-            overall shape is variable, it is replaced by ``None``.
+            overall shape is variable, it is replaced by :obj:`None`.
+
+    Example:
+        >>> from toys.datasets import SimulatedLinear
+        >>> a = SimulatedLinear(100, in_shape=(32,32,3), out_shape=10)
+        >>> toys.shape(a)
+        ((32, 32, 3), (10,))
+
+        .. todo::
+            The example does not run.
     '''
     get_shape = lambda x: getattr(x, 'shape', ())
 
@@ -248,9 +295,6 @@ def shape(dataset):
 
     return common_shape(shape5, shape6)
 
-
-# Subset
-# --------------------------------------------------
 
 class Subset(Dataset):
     '''A non-empty subset of some other dataset.
@@ -286,17 +330,27 @@ class Subset(Dataset):
 def subset(dataset, indices):
     '''Select a subset of some dataset by row indices.
 
-    Attributes:
+    Arguments:
         dataset (Dataset):
             The source dataset.
         indices (Sequence[int]):
             The indices of elements contained in this subset.
+
+    Returns:
+        Dataset:
+            A subset of the input.
+
+    Example:
+        >>> from toys.datasets import SimulatedLinear
+        >>> a = SimulatedLinear(100)
+        >>> len(a)
+        100
+        >>> b = toys.subset(a, np.arange(0, 50))
+        >>> len(b)
+        50
     '''
     return Subset(dataset, indices)
 
-
-# Zip
-# --------------------------------------------------
 
 class Zip(Dataset):
     '''Combines the columns of many datasets into one.
@@ -347,8 +401,22 @@ def zip_(*datasets):
             The datasets to combine.
 
     Returns:
-        zipped (Dataset):
+        Dataset:
             The combined dataset.
+
+    Example:
+        >>> from toys.datasets import SimulatedLinear
+        >>> a = SimulatedLinear(100, in_shape=4, out_shape=5)
+        >>> b = SimulatedLinear(100, in_shape=6, out_shape=7)
+        >>> c = toys.zip(a, b)
+        >>> len(a) == len(b)
+        True
+        >>> toys.shape(a)
+        ((4,), (5,))
+        >>> toys.shape(b)
+        ((6,), (7,))
+        >>> toys.shape(c)
+        ((4,), (5,), (6,), (7,))
     '''
     if len(datasets) == 0:
         raise TypeError('zip() requires at least 1 dataset.')
@@ -357,9 +425,6 @@ def zip_(*datasets):
     else:
         return Zip(*datasets)
 
-
-# Concat
-# --------------------------------------------------
 
 class Concat(Dataset):
     '''Combines the rows of many datasets into one.
@@ -405,8 +470,22 @@ def concat(*datasets):
             The datasets to combine.
 
     Returns:
-        concatenated (Dataset):
+        Dataset:
             The combined dataset.
+
+    Example:
+        >>> from toys.datasets import SimulatedLinear
+        >>> a = SimulatedLinear(100)
+        >>> b = SimulatedLinear(200)
+        >>> c = toys.concat(a, b)
+        >>> toys.shape(a) == toys.shape(b) == toys.shape(c)
+        True
+        >>> len(a)
+        100
+        >>> len(b)
+        200
+        >>> len(c)
+        300
     '''
     if len(datasets) == 0:
         raise TypeError('concat() requires at least 1 dataset.')
@@ -415,9 +494,6 @@ def concat(*datasets):
     else:
         return Concat(*datasets)
 
-
-# Flatten
-# --------------------------------------------------
 
 class Flat(Dataset):
     '''Flatten and concatenate the columns of a dataset.
@@ -434,17 +510,16 @@ class Flat(Dataset):
         return len(self.base)
 
     def __getitem__(self, index):
-        *inputs, target = self.base[index]
-        target = target.reshape(-1)
-        inputs = [x.reshape(-1) for x in inputs]
+        row = self.base[index]
+        row = [x.reshape(-1) for x in row]
 
         if self.supervised:
-            inputs = np.concatenate(inputs)
-            return inputs, target
+            *features, target = row
+            features = np.concatenate(features)
+            return features, target
         else:
-            inputs.append(target)
-            inputs = np.concatenate(inputs)
-            return (inputs,)
+            features = np.concatenate(row)
+            return (features,)
 
     def __repr__(self):
         return f'Flat({repr(self.base)}, supervised={repr(self.supervised)})'
@@ -468,10 +543,21 @@ def flatten(dataset, supervised=True):
             Operate in supervised mode.
 
     Returns:
-        flattened (Dataset):
+        Dataset:
             The combined dataset. If supervised is False, the dataset contains
             a single column with a flat shape. If supervised is True, the
             dataset contains two columns with flat shape.
+
+    Example:
+        >>> a = SimulatedLinear(100, in_shape=(32,32,3), out_shape=(32,32,15))
+        >>> toys.shape(a)
+        ((32, 32, 3), (32, 32, 15))
+        >>> b = toys.flatten(a)
+        >>> toys.shape(b)
+        ((3072,), (15360,))
+
+        .. todo::
+            The example does not run.
     '''
     cols = dataset[0]
 
@@ -492,13 +578,21 @@ def flatten(dataset, supervised=True):
     return dataset
 
 
-# Batching
-# --------------------------------------------------
-
-def batches(dataset, batch_size=0, **kwargs):
+def batches(dataset, batch_size=None, **kwargs):
     '''Iterates over a dataset in batches.
 
-    TODO: Document dataset hints.
+    This function is a convenience for |DataLoader|. All arguments are
+    forwarded to the |DataLoader| constructor, and the dataset may reccomend
+    default values.
+
+    If the dataset has an attribute :attr:`Dataset.hints`, then it must
+    be a dictionary mapping argument names to recommended values.
+
+    .. |DataLoader| replace:: :class:`~torch.utils.data.DataLoader`
+
+    .. seealso::
+        See the :doc:`/guides/datasets` user guide for information on batching
+        and argument hinting.
 
     Arguments:
         dataset (Dataset):
@@ -508,17 +602,22 @@ def batches(dataset, batch_size=0, **kwargs):
 
     Keyword Arguments:
         **kwargs:
-            Keyword arguments are forwarded to `torch.utils.data.DataLoader`.
+            Keyword arguments are forwarded to
+            :class:`~torch.utils.data.DataLoader`.
 
     Returns:
-        batches (DataLoader):
-            A PyTorch data loader.
+        ~torch.utils.data.DataLoader:
+            An iteratable over batches of the dataset.
+
+    Example:
+        .. todo::
+            Add an example.
     '''
+    if batch_size is not None:
+        kwargs.setdefault('batch_size', batch_size)
+
     hints = getattr(dataset, 'hints', {})
     kwargs = {**hints, **kwargs}
-
-    if batch_size is 0 and 'batch_size' not in hints:
-            batch_size = len(dataset)
 
     kwargs.setdefault('pin_memory', torch.cuda.is_available())
     kwargs.setdefault('batch_size', batch_size)

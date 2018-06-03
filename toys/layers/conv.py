@@ -45,7 +45,7 @@ class Conv2d(nn.Module):
                 **TODO**: Accept string values; requires extending `toys.parsers`.
             activation ([Tensor] -> Tensor or str or None):
                 An activation function to apply after the convolution.
-                Default: ``None``.
+                Default: :obj:`None`.
             initializer ([Tensor] -> Tensor or str):
                 An initializer function for the weights.
                 Default: ``'kaiming_uniform'``.

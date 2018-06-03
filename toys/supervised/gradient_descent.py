@@ -107,9 +107,9 @@ class GradientDescent(BaseEstimator):
         # Perform one iteration of gradient descent.
         def partial_fit(batch):
             opt.zero_grad()
-            *inputs, target = batch
+            *features, target = batch
             if use_cuda: target = target.cuda()
-            prediction = mod(*inputs)
+            prediction = mod(*features)
             loss = loss_fn(prediction, target)
             loss = loss.mean()
             loss.backward()

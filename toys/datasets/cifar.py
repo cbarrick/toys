@@ -24,8 +24,7 @@ class _CIFAR(Dataset, ABC):
     '''
 
     def __init__(self, base_path='./data', test=False, prefetch=True):
-        '''Construct a CIFAR dataset.
-
+        '''
         Arguments:
             base_path (str or Path):
                 A directory in which to store the data.
@@ -200,8 +199,6 @@ class CIFAR10(_CIFAR):
     The CIFAR-10 dataset consists of 60000 32x32 colour images in 10 classes,
     with 6000 images per class. There are 50000 training images and 10000 test
     images. The training images contain exactly 5000 images from each class.
-
-    See https://www.cs.toronto.edu/~kriz/cifar.html.
     '''
 
     url = 'https://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz'
@@ -232,8 +229,6 @@ class CIFAR20(_CIFAR):
     The CIFAR-20 dataset consists of 60000 32x32 colour images in 20 classes.
     There are 50000 training images and 10000 test images. The images are the
     same as the CIFAR-100 dataset, but labeled into 20 coarser classes.
-
-    See https://www.cs.toronto.edu/~kriz/cifar.html.
     '''
 
     url = 'https://www.cs.toronto.edu/~kriz/cifar-100-binary.tar.gz'
@@ -261,8 +256,6 @@ class CIFAR100(_CIFAR):
     The CIFAR-100 dataset consists of 60000 32x32 colour images in 100 classes,
     with 600 images per class. There are 50000 training images and 10000 test
     images. There are 500 training images and 100 testing images per class.
-
-    See https://www.cs.toronto.edu/~kriz/cifar.html.
     '''
 
     url = 'https://www.cs.toronto.edu/~kriz/cifar-100-binary.tar.gz'

@@ -41,7 +41,7 @@ Medium Priority
 
 Low Priority
 ------------
-- A tool to extract MyPy type annotation stubs from doc strings
+- A tool to extract MyPy type annotation stubs from docstrings
 - Scikit-learn feature parity
 
 

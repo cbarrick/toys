@@ -20,11 +20,11 @@ class LeastSquaresModule(Module):
         self.weight = Parameter(weight, requires_grad=False)
         self.bias = Parameter(bias, requires_grad=False)
 
-    def forward(self, *inputs):
-        n = len(inputs[0])
-        inputs = [x.view(n, -1) for x in inputs]
-        inputs = torch.cat(inputs, dim=1)
-        output = inputs @ self.weight + self.bias
+    def forward(self, *args):
+        n = len(args[0])
+        args = [x.view(n, -1) for x in args]
+        args = torch.cat(args, dim=1)
+        output = args @ self.weight + self.bias
         return output
 
 
@@ -71,7 +71,7 @@ class LeastSquares(BaseEstimator):
         Returns:
             model (TorchModel):
                 A linear model minimizing the mean squared error. The model
-                expects $n$ inputs where $n$ is the number of input columns
+                expects $n$ inputs where $n$ is the number of feature columns
                 in the training data.
         '''
         dataset = toys.zip(*datasets)

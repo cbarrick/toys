@@ -2,9 +2,9 @@ from tabulate import tabulate
 
 import toys
 from toys.datasets import CIFAR10
-from toys.layers.networks import VGG11
 from toys.metrics import MultiMetric
 from toys.model_selection import GridSearchCV
+from toys.networks import VGG11
 from toys.supervised import GradientDescent
 
 

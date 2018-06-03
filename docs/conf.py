@@ -38,18 +38,20 @@ pygments_style = 'sphinx'
 
 templates_path = ['_templates']
 source_suffix = ['.rst']
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = ['_build', '_static', 'Thumbs.db', '.DS_Store']
 
 extensions = [
     'sphinx.ext.autodoc',
-    'sphinx.ext.doctest',
-    'sphinx.ext.intersphinx',
-    'sphinx.ext.todo',
+    'sphinx.ext.autosummary',
     'sphinx.ext.coverage',
-    'sphinx.ext.mathjax',
-    'sphinx.ext.ifconfig',
-    'sphinx.ext.viewcode',
+    'sphinx.ext.doctest',
     'sphinx.ext.githubpages',
+    'sphinx.ext.ifconfig',
+    'sphinx.ext.intersphinx',
+    'sphinx.ext.mathjax',
+    'sphinx.ext.napoleon',
+    'sphinx.ext.todo',
+    'sphinx.ext.viewcode',
 ]
 
 
@@ -57,16 +59,17 @@ extensions = [
 # --------------------------------------------------
 
 html_theme = 'sphinx_rtd_theme'
+# html_logo = '_static/logo.svg'
 html_static_path = ['_static']
 
 # Theme specific,
 # see https://sphinx-rtd-theme.readthedocs.io/en/latest/configuring.html
 html_theme_options = {
-    'logo_only': False,
+    'logo_only': True,
     'display_version': True,
 
     # Sidebar
-    'collapse_navigation': True,
+    'collapse_navigation': False,
     'sticky_navigation': True,
     'navigation_depth': 4,
     'includehidden': True,
@@ -85,7 +88,37 @@ intersphinx_mapping = {
     'torch': ('https://pytorch.org/docs/stable', None),
     'numpy': ('https://docs.scipy.org/doc/numpy/', None),
     'scipy': ('https://docs.scipy.org/doc/scipy/reference/', None),
+    'pandas': ('https://pandas.pydata.org/pandas-docs/stable/', None),
 }
+
+
+# sphinx.ext.autodoc
+# --------------------------------------------------
+
+autodoc_default_flags = ['members']
+
+
+# sphinx.ext.autosummary
+# --------------------------------------------------
+
+autosummary_generate = True
+
+
+# sphinx.ext.napoleon
+# --------------------------------------------------
+
+napoleon_google_docstring = True
+napoleon_numpy_docstring = False
+napoleon_include_init_with_doc = False
+napoleon_include_private_with_doc = False
+napoleon_include_special_with_doc = False
+napoleon_use_admonition_for_examples = False
+napoleon_use_admonition_for_notes = False
+napoleon_use_admonition_for_references = False
+napoleon_use_ivar = True
+napoleon_use_param = True
+napoleon_use_rtype = True
+napoleon_use_keyword = True
 
 
 # sphinx.ext.todo

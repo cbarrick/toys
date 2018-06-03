@@ -1,22 +1,42 @@
-================================================================================
-               Toys: Friendly machine learning for rapid research
-================================================================================
+Toys: The data science toolbox
+==================================================
 
-Toys is a framework for machine learning experiments inspired by Scikit-learn and built with PyTorch.
+Toys is a toolbox for machine learning and data science, built with PyTorch, and designed for rapid research.
 
 
 Documentation
-==================================================
+--------------------------------------------------
 
 .. toctree::
-   :maxdepth: 1
    :caption: User Guides
+   :maxdepth: 1
 
    guides/datasets
 
 
+.. toctree::
+    :caption: Developer Guides
+    :maxdepth: 1
+
+    guides/style
+
+
+.. toctree::
+    :caption: API Docs
+    :maxdepth: 1
+
+    api/toys
+    api/toys.datasets
+    api/toys.layers
+    api/toys.metrics
+    api/toys.model_selection
+    api/toys.networks
+    api/toys.parsers
+    api/toys.supervised
+
+
 Contributing
-==================================================
+--------------------------------------------------
 
 All are welcome to contribute. But because the project is so young, coordination is key. Please reach out on the issue tracker, or in person if you are around UGA, if you are interested in contributing.
 
