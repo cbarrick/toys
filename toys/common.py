@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from io import StringIO
-from typing import Any, Dict
+from typing import *
 
 import numpy as np
 import pandas as pd
@@ -9,10 +9,54 @@ import torch
 from torch.nn import Module, DataParallel
 from torch.utils.data import DataLoader
 
-import toys
-from toys.metrics import Accumulator
-from toys.parsers import parse_dtype, parse_metric
-from toys.typing import Model, Estimator, Dataset
+# The Protocol type does not exist until Python 3.7.
+# TODO: Remove the try-except when Python 3.6 support is dropped.
+try:
+    from typing import Protocol
+except ImportError:
+    from abc import ABC as Protocol
+
+
+class Dataset(Protocol):
+    '''The dataset protocol.
+    '''
+    @abstractmethod
+    def __len__(self):
+        raise NotImplementedError
+
+    @abstractmethod
+    def __getitem__(self, index):
+        raise NotImplementedError
+
+
+class Estimator(Protocol):
+    '''The estimator protocol.
+    '''
+    @abstractmethod
+    def __call__(*args, **kwargs):
+        raise NotImplementedError
+
+
+class Model(Protocol):
+    '''The model protocol.
+    '''
+    @abstractmethod
+    def __call__(*args, **kwargs):
+        raise NotImplementedError
+
+
+class Metric(Protocol):
+    '''The model protocol.
+    '''
+    @abstractmethod
+    def __call__(*args, **kwargs):
+        raise NotImplementedError
+
+
+ArrayShape = Tuple[int, ...]
+DatasetShape = Union[Tuple[Union[ArrayShape, None], ...], None]
+CrossValSplitter = Callable[[Dataset], Iterable[Tuple[Sequence[int], Sequence[int]]]]
+ParamGrid = Mapping[str, Sequence]
 
 
 class BaseEstimator(ABC):
@@ -116,6 +160,8 @@ class TorchModel(Module):
             The dtype to which the module and inputs are cast.
     '''
     def __init__(self, module, device_ids=None, dtype='float32'):
+        from toys.parsers import parse_dtype
+
         super().__init__()
 
         if not isinstance(module, DataParallel):
@@ -151,6 +197,7 @@ class TorchModel(Module):
     def train(self, mode=True):
         self._train_mode = mode
         self.module.train(mode)
+        return self
 
 
 # Dataset utils

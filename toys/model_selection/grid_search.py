@@ -8,9 +8,9 @@ import torch
 from torch import multiprocessing as mp
 
 import toys
-from toys.common import BaseEstimator, TunedEstimator
+from toys.common import BaseEstimator, CrossValSplitter, Estimator, Metric
+from toys.common import Model, ParamGrid, TunedEstimator
 from toys.parsers import parse_metric
-from toys.typing import CrossValSplitter, Estimator, Metric, Model, ParamGrid
 
 from .cross_val import KFold
 

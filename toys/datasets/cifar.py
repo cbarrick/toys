@@ -9,7 +9,7 @@ from urllib import request
 import numpy as np
 
 import toys
-from toys.typing import Dataset
+from toys.common import Dataset
 
 
 logger = getLogger(__name__)

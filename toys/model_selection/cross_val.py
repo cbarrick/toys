@@ -1,7 +1,7 @@
 import numpy as np
 
 import toys
-from toys.typing import CrossValSplitter, Dataset
+from toys.common import CrossValSplitter, Dataset
 
 
 class KFold(CrossValSplitter):

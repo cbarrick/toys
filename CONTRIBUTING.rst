@@ -86,8 +86,8 @@ E.g.::
     from torch.optim import Optimizer
 
     import toys
+    from toys.common import Dataset
     from toys.metrics import Mean
-    from toys.typing import Dataset
 
     from .cross_val import k_fold
 

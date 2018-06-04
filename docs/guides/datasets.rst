@@ -1,7 +1,7 @@
 Datasets
 ==================================================
 
-The :py:class:`~toys.typing.Dataset` protocol is borrowed from PyTorch and is the boundary between the preprocess and the model. The protocol is quite easy to implement. A dataset need only have methods :py:meth:`~object.__len__` and :py:meth:`~object.__getitem__` with integer indexing. Most simple collections can be used as datasets, including :py:class:`list`, :py:class:`tuple`, and :py:class:`~numpy.ndarray`.
+The :py:class:`~toys.Dataset` protocol is borrowed from PyTorch and is the boundary between the preprocess and the model. The protocol is quite easy to implement. A dataset need only have methods :py:meth:`~object.__len__` and :py:meth:`~object.__getitem__` with integer indexing. Most simple collections can be used as datasets, including :py:class:`list`, :py:class:`tuple`, and :py:class:`~numpy.ndarray`.
 
 We use the following vocabulary to describe datasets:
 

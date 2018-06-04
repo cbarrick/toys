@@ -4,8 +4,8 @@ from typing import Callable
 import torch
 
 import toys
+from toys.common import Metric
 from toys.parsers import parse_metric
-from toys.typing import Metric
 
 
 class MultiMetric(Metric):
