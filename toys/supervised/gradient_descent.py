@@ -18,9 +18,9 @@ class GradientDescent(BaseEstimator):
         kwargs['ctor'] = ctor
         super().__init__(**kwargs)
 
-    def fit(self, *datasets, ctor=None, classifier=True, loss_fn='cross_entropy',
-            optimizer='SGD:lr=1e-4', max_epochs=100, batch_size=1, device_ids=None,
-            stop_policy=None, patience=-1, dtype=None, dry_run=False, **kwargs):
+    def fit(self, *datasets, ctor=None, loss_fn='cross_entropy', optimizer='SGD:lr=1e-4',
+            max_epochs=100, batch_size=1, device_ids=None, stop_policy=None, patience=-1,
+            dtype=None, dry_run=False, **kwargs):
         '''Trains a TorchModel.
 
         Users should not call this method directly, but instead call the
@@ -37,14 +37,10 @@ class GradientDescent(BaseEstimator):
                 A constructor for the PyTorch module to train. The ctor may
                 be specified either when constructing or calling this estimator
                 and MUST NOT be None. (Though None will successfully typecheck.)
-            classifier (bool):
-                If true, the learned model is a classifier. The default is
-                false. See `toys.TorchModel` for more information.
             loss_fn (str or Callable[..., float]):
                 The loss function. If the argument is a function, it must
                 accept the predicted values and the true targets as arguments
-                and return the computed loss. The default is cross entropy if
-                classifier is true and mean squared error otherwise.
+                and return the computed loss.
             optimizer (str or Callable[..., Optimizer]):
                 A constructor for the optimizer. If the argument is a function,
                 it should take the trainable parameters as an argument and
@@ -98,9 +94,7 @@ class GradientDescent(BaseEstimator):
         loss_fn = parse_loss(loss_fn)
 
         assert ctor is not None
-        mod = ctor(**kwargs)
-        mod = mod.to(dtype).train()
-        mod = DataParallel(mod, device_ids)
+        mod = TorchModel(ctor(**kwargs), device_ids, dtype)
 
         optimizer = parse_optimizer(optimizer)
         opt = optimizer(mod.parameters())
@@ -167,7 +161,5 @@ class GradientDescent(BaseEstimator):
             if stop(val_loss): break
             if dry_run: break
 
-        mod = mod.module  # Unwrap from DataParallel.
-        mod = mod.eval()  # Exit training mode.
-        mod = mod.cpu()   # Release GPU resources.
-        return TorchModel(mod, classifier=classifier, dtype=dtype)
+        mod = mod.eval()
+        return mod

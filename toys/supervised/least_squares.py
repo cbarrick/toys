@@ -37,6 +37,9 @@ class LeastSquares(BaseEstimator):
         Users should not call this method directly, but instead call the
         estimator as a function.
 
+        .. todo::
+            :class:`LeastSquares` does not yet support CUDA.
+
         Arguments:
             datasets (Dataset):
                 The datasets to fit. If more than one are given, they are
@@ -125,5 +128,8 @@ class LeastSquares(BaseEstimator):
 
         weight = weight.reduce()
         bias = y_mean - x_mean @ weight if learn_bias else 0
+
         mod = LeastSquaresModule(weight, bias)
-        return TorchModel(mod, classifier=False, dtype=dtype)
+        mod = TorchModel(mod, device_ids=[], dtype=dtype)
+        mod = mod.eval()
+        return mod

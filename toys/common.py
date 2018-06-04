@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 
 import torch
-from torch.nn import Module
+from torch.nn import Module, DataParallel
 from torch.utils.data import DataLoader
 
 import toys
@@ -101,60 +101,56 @@ class TunedEstimator(BaseEstimator):
         return model
 
 
-class TorchModel(Model):
-    '''A wrapper around PyTorch modules.
+class TorchModel(Module):
+    '''A convenience wrapper around PyTorch modules.
 
-    This wrapper extends `torch.nn.Module` to accept both numpy arrays, and
-    torch tensors as input and to return numpy arrays as output.
+    .. todo::
+        Document the conveniences.
 
-    ..note:
-        A `TorchModel` is NOT a `torch.nn.Module`. Backprop graphs are not
-        created during prediction.
+    Arguments:
+        module (Module):
+            The module being wrapped.
+        device_ids (Sequence[int]):
+            A list of CUDA device IDs to use. The default is all devices.
+        dtype (str or torch.dtype):
+            The dtype to which the module and inputs are cast.
     '''
+    def __init__(self, module, device_ids=None, dtype='float32'):
+        super().__init__()
 
-    def __init__(self, module, classifier=False, device='cpu', dtype='float32'):
-        '''Construct a `TorchModel`.
+        if not isinstance(module, DataParallel):
+            module = DataParallel(module, device_ids)
 
-        Arguments:
-            module (Module):
-                The module being wrapped.
-            classifier (bool):
-                If true, the model returns the argmax of the module's
-                prediction along axis 1.
-            device (str or torch.device):
-                The device on which to execute the model.
-            dtype (str or torch.dtype):
-                The dtype to which the module and inputs are cast.
-        '''
-        self.classifier = classifier
-        self.device = torch.device(device)
+        self.device_ids = module.device_ids
         self.dtype = parse_dtype(dtype)
-        self.module = module.to(self.device, self.dtype)
+        self.module = module.to(self.dtype)
+        self._train_mode = True
 
-    def __getattr__(self, name):
-        '''Attribute access is delecated to the underlying module.
-        '''
-        return getattr(self.module, name)
+        self.train()
 
-    def __call__(self, *inputs):
-        '''Evaluate the model on some inputs.
-        '''
-        with torch.no_grad():
-            inputs = self._cast_inputs(inputs)
-            y = self.module(*inputs)
-            y = y.numpy()
-            if self.classifier:
-                y = y.argmax(axis=1)
-            return y
+    def forward(self, *inputs):
+        dtype = self.dtype
+        module = self.module
+        train_mode = self._train_mode
 
-    def _cast_inputs(self, inputs):
-        '''Cast inputs to tensors of the expected dtype, device, and dimension.
-        '''
+        inputs = list(inputs)
         for i, x in enumerate(inputs):
-            if np.isscalar(x): x = np.array(x)
-            if isinstance(x, np.ndarray): x = torch.from_numpy(x)
-            x = x.to(self.device, self.dtype)
-            yield x
+            if isinstance(x, np.ndarray):
+                x = torch.from_numpy(x, dtype=dtype)
+            x = x.to(dtype)
+            inputs[i] = x
+
+        with torch.autograd.set_grad_enabled(train_mode):
+            y = module(*inputs)
+
+        if not train_mode:
+            y = y.numpy()
+
+        return y
+
+    def train(self, mode=True):
+        self._train_mode = mode
+        self.module.train(mode)
 
 
 # Dataset utils
