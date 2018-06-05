@@ -1,7 +1,8 @@
-Toys: The data science toolbox
-==================================================
+================================================================================
+                         Toys: The AI toolbox
+================================================================================
 
-Toys is a toolbox for machine learning and data science, built with PyTorch, and designed for rapid research.
+Toys is a toolbox for AI, built with PyTorch, and designed for rapid research.
 
 
 Documentation
