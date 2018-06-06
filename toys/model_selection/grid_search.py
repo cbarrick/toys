@@ -19,7 +19,7 @@ logger = getLogger(__name__)
 
 
 def combinations(grid):
-    '''Iterates over all combinations of parameters in the grid.
+    '''Iterates over all combinations of a parameter grid.
 
     Arguments:
         grid (ParamGrid or Iterable[ParamGrid] or None):
@@ -51,6 +51,9 @@ def combinations(grid):
 
 
 class GridSearchCV(BaseEstimator):
+    '''A meta-estimator to exhaustively search a grid of hyperparameters.
+    '''
+
     def fit(self, *datasets, estimator=None, param_grid=None, cv=3, metric='f_score',
             minimize=False, n_jobs=0, dry_run=False):
         '''Learn the best hyper-parameters of an estimator.
@@ -58,7 +61,7 @@ class GridSearchCV(BaseEstimator):
         Arguments:
             datasets (Dataset):
                 The datasets to fit. If more than one are given, they are
-                combined using `toys.zip`.
+                combined using :func:`toys.zip`.
 
         Keyword Arguments:
             estimator (Estimator or None):
@@ -73,31 +76,28 @@ class GridSearchCV(BaseEstimator):
             cv (int or CrossValSplitter):
                 The cross validation strategy to use. If an int is given, a
                 shuffled k-fold cross validation is used with this many folds.
-                Otherwise, this should be a function which accepts a dataset
-                and returns an iterable over ``(train, test)`` pairs, where
-                ``train`` indexes the training instances and ``test`` indexes
-                the validation instances.
             metric (str or Metric or Sequence[str or Metric]):
                 A metric or metrics to measure the goodness of fit of a model.
             minimize (bool):
                 Set to true to choose the parameters which score the lowest.
             n_jobs (int or None):
                 The number of worker processes. If 0, all work is done in the
-                main process. If None, use the value of `os.cpu_count()`.
+                main process. If None, use the value of ``os.cpu_count()``.
             dry_run (bool):
                 If true, break from loops early. Useful for debugging.
 
         Returns:
-            best_estimator (TunedEstimator):
+            TunedEstimator:
                 An estimator which defaults to using the best hyperparameters
                 found through cross validated grid search. The estimator has
-                an attribute `cv_results` which contains the overall results
+                an attribute :attr:`cv_results` which contains the outcomes
                 of the grid search.
 
         Raises:
             ValueError:
-                The ``estimator`` argument must not be None. It must be set
-                either when constructing or calling `GridSearchCV`.
+                The ``estimator`` argument must not be :obj:`None`. It
+                must be set either when constructing or invoking a
+                :class:`GridSearchCV`.
         '''
         dataset = toys.zip(*datasets)
         metric = parse_metric(metric)

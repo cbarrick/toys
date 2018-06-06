@@ -59,12 +59,16 @@ class Metric(Protocol):
 
 # Type aliases
 # --------------------------------------------------
-# These are for documentation and type hinting. There is no need to use them
-# at runtime. See the API docs and user guides.
+# These are for documentation and type hinting.
+# There is no need to use them at runtime.
+# They are documented manually in the API docs.
 
-ArrayShape = Tuple[int, ...]
-VariableArrayShape = Tuple[Optional[int], ...]
-DatasetShape = Optional[Tuple[Optional[VariableArrayShape], ...]]
+# TODO: We need a type definition for arrays
+Array = Any
+
+ColumnShape = Optional[Tuple[Optional[int], ...]]
+RowShape = Optional[Tuple[ColumnShape, ...]]
+
 Fold = Tuple[Dataset, Dataset]
 CrossValSplitter = Callable[[Dataset], Iterable[Fold]]
 ParamGrid = Mapping[str, Sequence]
@@ -188,6 +192,14 @@ class TorchModel(Module):
         return super().__call__(*args, **kwargs)
 
     def forward(self, *args, **kwargs):
+        '''Applies the underlying model to a collated row of features.
+
+        All args are cast to :class:`torch.Tensor` with the same dtype as the
+        model. In evaluation mode, autograd is disabled.
+
+        To ensure registered hooks are run, you should invoke the model object
+        directly rather than calling this method.
+        '''
         dtype = self.dtype
         module = self.module
         train_mode = self._train_mode
@@ -199,6 +211,7 @@ class TorchModel(Module):
                     x = torch.from_numpy(x, dtype=dtype)
                 x = x.to(dtype)
                 args[i] = x
+
             y = module(*args, **kwargs)
 
         return y
@@ -262,9 +275,9 @@ def shape(dataset):
             The dataset whose shape will be checked.
 
     Returns:
-        DatasetShape:
-            A tuple of array shapes, one for each column. If any part of the
-            overall shape is variable, it is replaced by :obj:`None`.
+        RowShape:
+            A tuple of shapes, one for each column. If any part of the shape
+            is variable, it is replaced by :obj:`None`.
 
     Example:
         >>> from toys.datasets import SimulatedLinear
@@ -275,8 +288,6 @@ def shape(dataset):
         .. todo::
             The example does not run.
     '''
-    get_shape = lambda x: getattr(x, 'shape', ())
-
     n = len(dataset)
     if n == 0: return None
 
@@ -285,10 +296,10 @@ def shape(dataset):
     row3 = dataset[np.random.randint(n)]
     row4 = dataset[np.random.randint(n)]
 
-    shape1 = tuple(get_shape(a) for a in row1)
-    shape2 = tuple(get_shape(a) for a in row2)
-    shape3 = tuple(get_shape(a) for a in row3)
-    shape4 = tuple(get_shape(a) for a in row4)
+    shape1 = tuple(np.shape(col) for col in row1)
+    shape2 = tuple(np.shape(col) for col in row2)
+    shape3 = tuple(np.shape(col) for col in row3)
+    shape4 = tuple(np.shape(col) for col in row4)
 
     shape5 = common_shape(shape1, shape2)
     shape6 = common_shape(shape3, shape4)
@@ -606,7 +617,7 @@ def batches(dataset, batch_size=None, **kwargs):
             :class:`~torch.utils.data.DataLoader`.
 
     Returns:
-        ~torch.utils.data.DataLoader:
+        torch.utils.data.DataLoader:
             An iteratable over batches of the dataset.
 
     Example:
