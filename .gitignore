@@ -7,6 +7,10 @@
 # data downloaded by datasets
 /data
 
+# Sphinx documentation
+/docs/_build
+/docs/api/stubs
+
 
 # Generic Python ignores
 # --------------------------------------------------
