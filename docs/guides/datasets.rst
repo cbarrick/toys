@@ -7,9 +7,9 @@ We use the following vocabulary to describe datasets:
 
 :Row: The value at ``dataset[i]`` is called the |ith| row of the dataset. Each row must be a sequence of arrays and/or scalars, and each array may be of different shape.
 
-:Column: The positions in a row are called the columns. Columns are either **feature columns** or **target columns**.
+:Column: The positions in a row are called the columns.
 
-:Supervised: A supervised dataset has at least two columns where the last column is a **target column** rather than a feature column.
+:Supervised: A supervised dataset has at least two columns where the last column is designated as the **target column**, and the rest as **feature columns**. In unsupervised datasets, all are considered feature columns.
 
 :Feature: The data in any one feature column of a row is called a feature of that row.
 
@@ -25,31 +25,6 @@ For example, the :class:`~toys.datasets.CIFAR10` dataset is a supervised dataset
     Unlike arrays, columns need not have the same shape across all rows. In fact, the same column may have a different number of dimensions in different rows, and the rows may even have different number of columns all together. While most estimators expect some consistency, this freedom allows us to efficiently represent, e.g., variable sequence lengths. A dataset shape (as opposed to a row or instance shape) may use :obj:`None` to represent a variable aspect of its shape.
 
 .. |ith| replace:: i\ :sup:`th`
-
-
-Creating and combining datasets
---------------------------------------------------
-
-The primary functions for combining datasets are :func:`toys.concat` and :func:`toys.zip` which concatenate datasets by rows and columns respectively.
-
-Of these, :func:`toys.zip` is the more commonly used. It allows us to, e.g., combine the features and target from separate datasets:
-
-    >>> features = np.random.random(size=(100, 1, 5))  # 100 rows, 1 column of shape (5,)
-    >>> target = np.prod(features, axis=-1)            # 100 rows, 1 scalar column
-    >>> dataset = toys.zip(features, target)           # 100 rows, 2 columns
-    >>> toys.shape(features)
-    ((5,),)
-    >>> toys.shape(target)
-    ((),)
-    >>> toys.shape(dataset)
-    ((5,), ())
-
-Most estimators will automatically zip datasets if you pass more than one:
-
-    >>> from toys.supervised import LeastSquares
-    >>> estimator = LeastSquares()
-    >>> model = estimator(dataset)           # Each of these calls
-    >>> model = estimator(features, target)  # is equivalent to the other
 
 
 Batching and iteration
@@ -75,3 +50,28 @@ The most common arguments are:
 
 .. todo::
 	Add examples
+
+
+Creating and combining datasets
+--------------------------------------------------
+
+The primary functions for combining datasets are :func:`toys.concat` and :func:`toys.zip` which concatenate datasets by rows and columns respectively.
+
+Of these, :func:`toys.zip` is the more commonly used. It allows us to, e.g., combine the features and target from separate datasets:
+
+    >>> features = np.random.random(size=(100, 1, 5))  # 100 rows, 1 column of shape (5,)
+    >>> target = np.prod(features, axis=-1)            # 100 rows, 1 scalar column
+    >>> dataset = toys.zip(features, target)           # 100 rows, 2 columns
+    >>> toys.shape(features)
+    ((5,),)
+    >>> toys.shape(target)
+    ((),)
+    >>> toys.shape(dataset)
+    ((5,), ())
+
+Most estimators will automatically zip datasets if you pass more than one:
+
+    >>> from toys.supervised import LeastSquares
+    >>> estimator = LeastSquares()
+    >>> model = estimator(dataset)           # Each of these calls
+    >>> model = estimator(features, target)  # is equivalent to the other
