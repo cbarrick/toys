@@ -394,14 +394,8 @@ def flatten(dataset, supervised=True):
 def batches(dataset, batch_size=None, **kwargs):
     '''Iterates over a dataset in batches.
 
-    This function is a convenience for |DataLoader|. All arguments are
-    forwarded to the |DataLoader| constructor, and the dataset may reccomend
-    default values.
-
-    If the dataset has an attribute :attr:`Dataset.hints`, then it must
-    be a dictionary mapping argument names to recommended values.
-
-    .. |DataLoader| replace:: :class:`~torch.utils.data.DataLoader`
+    If the dataset has an attribute :attr:`~Dataset.hints`, then it must be a
+    dictionary mapping argument names to recommended values.
 
     .. seealso::
         See the :doc:`/guides/datasets` user guide for information on batching
@@ -415,8 +409,7 @@ def batches(dataset, batch_size=None, **kwargs):
 
     Keyword Arguments:
         **kwargs:
-            Keyword arguments are forwarded to
-            :class:`~torch.utils.data.DataLoader`.
+            Keyword arguments are forwarded to |DataLoader|.
 
     Returns:
         torch.utils.data.DataLoader:
@@ -425,6 +418,9 @@ def batches(dataset, batch_size=None, **kwargs):
     Example:
         .. todo::
             Add an example.
+
+    .. |DataLoader| replace::
+        :class:`~torch.utils.data.DataLoader`
     '''
     if batch_size is not None:
         kwargs.setdefault('batch_size', batch_size)

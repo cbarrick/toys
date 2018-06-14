@@ -35,8 +35,7 @@ Type aliases
 
 These type aliases exist to aid in documentation and static analysis. They are irrelevant at runtime.
 
-Model selection
-^^^^^^^^^^^^^^^^^^^^^^^^^
+
 .. class:: CrossValSplitter
  	:annotation: = Callable[[Dataset], Iterable[Fold]]
 

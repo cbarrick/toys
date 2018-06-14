@@ -3,11 +3,11 @@ Datasets
 
 The :class:`~toys.Dataset` protocol is borrowed from PyTorch and is the boundary between the preprocess and the model. The protocol is quite easy to implement. A dataset need only have methods :meth:`~object.__len__` and :meth:`~object.__getitem__` with integer indexing. Most simple collections can be used as datasets, including :class:`list` and :class:`~numpy.ndarray`.
 
-We use the following vocabulary to describe datasets:
+We use the following vocabulary when discussing datasets:
 
 :Row: The value at ``dataset[i]`` is called the |ith| row of the dataset. Each row must be a sequence of arrays and/or scalars, and each array may be of different shape.
 
-:Column: The positions in a row are called the columns.
+:Column: The positions in a row are called the columns. The |jth| column of the dataset is the sequence of the |jth| column of every row.
 
 :Supervised: A supervised dataset has at least two columns where the last column is designated as the **target column**, and the rest as **feature columns**. In unsupervised datasets, all are considered feature columns.
 
@@ -17,7 +17,7 @@ We use the following vocabulary to describe datasets:
 
 :Instance: The features of a row are collectively called an instance.
 
-:Shape: The shape of a row or instance is the sequence of shapes of its columns. The shape of a dataset is the shape of its rows. Additionally, the shape of a dataset *does not include its length*.
+:Shape: The shape of a row or instance is the sequence of shapes of its columns. The shape of a dataset is the shape of its rows. Note that the shape of a dataset *does not include its length*.
 
 For example, the :class:`~toys.datasets.CIFAR10` dataset is a supervised dataset with two columns. The feature column contains 32x32 pixel RGB images, and the target column contains integer class labels. The shape of the feature is ``(32, 32, 3)``, and the shape if the target is ``()`` (i.e. the target is a scalar). The shape of the CIFAR10 dataset is thus ``((32,32,3), ())``.
 
@@ -25,6 +25,7 @@ For example, the :class:`~toys.datasets.CIFAR10` dataset is a supervised dataset
     Unlike arrays, columns need not have the same shape across all rows. In fact, the same column may have a different number of dimensions in different rows, and the rows may even have different number of columns all together. While most estimators expect some consistency, this freedom allows us to efficiently represent, e.g., variable sequence lengths. A dataset shape (as opposed to a row or instance shape) may use :obj:`None` to represent a variable aspect of its shape.
 
 .. |ith| replace:: i\ :sup:`th`
+.. |jth| replace:: j\ :sup:`th`
 
 
 Batching and iteration
