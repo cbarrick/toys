@@ -32,7 +32,6 @@ Documentation
     api/toys.metrics
     api/toys.model_selection
     api/toys.networks
-    api/toys.parsers
     api/toys.supervised
 
 

@@ -1,4 +1,8 @@
-from .grid_search import combinations
-from .grid_search import GridSearchCV
+from .core import combinations
+from .core import CrossValSplitter
+from .core import Fold
+from .core import KFold
+from .core import ParamGrid
+from .core import TunedEstimator
 
-from .cross_val import KFold
+from .grid_search import GridSearchCV

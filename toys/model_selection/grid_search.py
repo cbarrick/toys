@@ -1,53 +1,17 @@
 from logging import getLogger
-from typing import Sequence, Mapping
+from typing import Sequence
 
-import numpy as np
 import pandas as pd
 
-import torch
-from torch import multiprocessing as mp
-
 import toys
-from toys.common import BaseEstimator, CrossValSplitter, Estimator, Metric
-from toys.common import Model, ParamGrid, TunedEstimator
+from toys.common import BaseEstimator, Estimator
+from toys.metrics import Metric
 from toys.parsers import parse_metric
 
-from .cross_val import KFold
+from .core import CrossValSplitter, KFold, ParamGrid, TunedEstimator
 
 
 logger = getLogger(__name__)
-
-
-def combinations(grid):
-    '''Iterates over all combinations of a parameter grid.
-
-    Arguments:
-        grid (ParamGrid or Iterable[ParamGrid] or None):
-            A parameter grid, list of parameter grids or None. A parameter grid
-            is a mapping from parameter names to sequences of allowed values.
-
-    Yields:
-        A dictionary mapping parameter names to values.
-    '''
-    if not grid:
-        yield {}
-
-    elif isinstance(grid, Mapping):
-        indices = {k:0 for k in grid.keys()}
-        lens = {k:len(v) for k, v in grid.items()}
-        n = int(np.prod(list(lens.values())))
-        for _ in range(n):
-            yield {k: grid[k][indices[k]] for k in grid}
-            for k in indices:
-                indices[k] += 1
-                if indices[k] == lens[k]:
-                    indices[k] = 0
-                else:
-                    break
-
-    else:
-        for g in grid:
-            yield from combinations(g)
 
 
 class GridSearchCV(BaseEstimator):

@@ -14,7 +14,6 @@ The core protocols are pure abstract classes. They provide no functionality and 
 	Dataset
 	Estimator
 	Model
-	Metric
 
 
 Common classes
@@ -24,7 +23,6 @@ Common classes
 	:toctree: stubs
 
 	BaseEstimator
-	TunedEstimator
 	TorchModel
 
 
@@ -40,6 +38,21 @@ Dataset utilities
 	toys.flatten
 	toys.subset
 	toys.shape
+
+
+Argument parsers
+--------------------------------------------------
+
+.. autosummary::
+	:toctree: stubs
+
+	parse_activation
+	parse_initializer
+	parse_optimizer
+	parse_loss
+	parse_dtype
+	parse_metric
+
 
 
 Type aliases
@@ -71,21 +84,3 @@ For example, the :class:`~toys.datasets.CIFAR10` dataset has two columns. The fi
 >>> cifar = CIFAR10()
 >>> toys.shape(cifar)
 ((32, 32, 3), ())
-
-
-Model selection
-^^^^^^^^^^^^^^^^^^^^^^^^^
-.. class:: CrossValSplitter
- 	:annotation: = Callable[[Dataset], Iterable[Fold]]
-
-	A function that takes a dataset and returns an iterable over some :class:`Fold` s of the dataset. These can be used by meta-estimators, like :class:`~toys.model_selection.GridSearchCV`, to test how estimators generalize to unseen data.
-
-
-.. class:: Fold
- 	:annotation: = Tuple[Dataset, Dataset]
-
-	A fold is the partitioning of a dataset into two disjoint subsets, ``(train, test)``.
-
-
-.. class:: ParamGrid
- 	:annotation: = Mapping[str, Sequence]

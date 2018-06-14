@@ -5,24 +5,25 @@ from . import model_selection
 from . import parsers
 from . import supervised
 
-# External users should import common objects directly from the `toys` package.
-# Internal users should import these from `toys.common` to avoid import cycles.
-# This only applies to imports; internal users can still call, e.g. `toys.zip`.
 from .common import BaseEstimator
-from .common import ColumnShape
-from .common import CrossValSplitter
-from .common import Dataset
 from .common import Estimator
-from .common import Fold
-from .common import Metric
 from .common import Model
-from .common import ParamGrid
-from .common import RowShape
 from .common import TorchModel
-from .common import TunedEstimator
-from .common import batches
-from .common import concat
-from .common import flatten
-from .common import shape
-from .common import subset
-from .common import zip_ as zip
+
+from .data import Dataset
+from .data import ColumnShape
+from .data import RowShape
+from .data import batches
+from .data import concat
+from .data import flatten
+from .data import shape
+from .data import subset
+from .data import zip_ as zip
+
+from .parsers import parse_str
+from .parsers import parse_activation
+from .parsers import parse_initializer
+from .parsers import parse_optimizer
+from .parsers import parse_loss
+from .parsers import parse_dtype
+from .parsers import parse_metric

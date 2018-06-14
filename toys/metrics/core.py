@@ -4,8 +4,23 @@ from typing import Callable
 import torch
 
 import toys
-from toys.common import Metric
 from toys.parsers import parse_metric
+
+
+# The Protocol type does not exist until Python 3.7.
+# TODO: Remove the try-except when Python 3.6 support is dropped.
+try:
+    from typing import Protocol
+except ImportError:
+    from abc import ABC as Protocol
+
+
+class Metric(Protocol):
+    '''The metric protocol.
+    '''
+    @abstractmethod
+    def __call__(*args, **kwargs):
+        raise NotImplementedError
 
 
 class MultiMetric(Metric):
@@ -22,7 +37,7 @@ class MultiMetric(Metric):
             return scores
 
 
-class Accumulator(ABC):
+class Accumulator(Metric, ABC):
     supervised = False
 
     @abstractmethod
